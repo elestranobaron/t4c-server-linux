@@ -1,0 +1,20 @@
+# Normalisation des fins de ligne (sources historiques Windows en CRLF toléré)
+* text=auto
+*.cpp text
+*.h text
+*.md text
+*.sh text eol=lf
+*.sql text
+CMakeLists.txt text
+
+# Binaires : jamais de diff ni de normalisation
+*.WDA binary
+*.wda binary
+*.lng binary
+*.elng binary
+*.dat binary
+*.bin binary
+*.exp binary
+*.lib binary
+*.ico binary
+*.png binary

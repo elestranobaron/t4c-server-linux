@@ -1,0 +1,66 @@
+/******************************************************************************
+Modify for vs2008 (26/04/2009)
+/******************************************************************************/
+#if !defined(AFX_WDAHIVES_H__5453C343_D66A_11D2_84B3_00E02922FA40__INCLUDED_)
+#define AFX_WDAHIVES_H__5453C343_D66A_11D2_84B3_00E02922FA40__INCLUDED_
+
+#if _MSC_VER >= 1000
+	#pragma once
+#endif // _MSC_VER >= 1000
+
+#include "WDATable.h"
+#include "WDALarvae.h"
+
+/******************************************************************************/
+class WDAHives : public WDATable  
+/******************************************************************************/
+{
+public:
+    WDAHives( vir::Logger &cLogger );
+	virtual ~WDAHives();
+
+    struct WorldPos
+	{
+        WorldPos() : X(0), Y(0), world(0){}
+        
+        bool operator==( const WorldPos &r ) const
+		{
+            return X     == r.X && 
+                   Y     == r.Y && 
+                   world == r.world;
+        }
+
+        int X, Y, world;
+    };
+
+    struct HiveData
+	{
+        HiveData() : 
+            m_ReadOnly( false ),
+            dwMinEmergeTime(0),
+            dwMaxEmergeTime(0),
+            dwMaxChildren(0),
+            dwEmergenceRange(0)
+        {}
+
+        std::vector< WDALarvae > vLarvae;       // Larvae handled by the hive.
+        std::vector< WorldPos >  vLocations;    // List of positions where the hive appears.
+        
+        bool  m_ReadOnly;
+        DWORD dwMinEmergeTime;
+        DWORD dwMaxEmergeTime;
+        DWORD dwMaxChildren;
+        DWORD dwEmergenceRange;
+        std::string m_HiveName;
+    };
+    
+    // Accessors
+    std::vector< HiveData > &GetHives( void );
+    // Creates from a wdaFile.
+    virtual void CreateFrom( WDAFile &wdaFile, bool createReadOnly );
+private:
+    // Data
+    std::vector< HiveData > vHives;
+};
+
+#endif // !defined(AFX_WDAHIVES_H__5453C343_D66A_11D2_84B3_00E02922FA40__INCLUDED_)

@@ -1,0 +1,31 @@
+# --- Binaires de build + données de run (jamais dans git) ---
+build/
+build_backup_*/
+ServerRelease/
+CMakeFiles/
+CMakeCache.txt
+
+# --- Données serveur propriétaires (réintégrées par setup_from_clone.sh) ---
+runtime/*
+!runtime/SOURCE.txt
+!runtime/SQL/
+# Fichiers générés/locaux dans SQL/
+runtime/SQL/odbc.ini
+
+# --- Secrets / identité serveur ---
+svr.id
+*.odbc.ini
+docker/runtime/
+
+# --- Sorties d'exécution ---
+Logs/
+logs/
+EXTBD/
+*.log
+
+# --- IDE / caches ---
+.vscode/
+.idea/
+.cache/
+*.suo
+*.user

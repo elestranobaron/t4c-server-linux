@@ -1,0 +1,55 @@
+# Stack T4C Server + MariaDB (auth / persos minimaux).
+# Prerequis assets: ./docker/sync-runtime-from-build.sh  (WDA LP64 + .elng)
+
+services:
+  mariadb:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-t4c_root_dev}
+      MARIADB_DATABASE: ${T4C_DB_NAME:-t4c_server}
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./tools/sql/bootstrap_auth_mariadb.sql:/docker-entrypoint-initdb.d/01-bootstrap_auth.sql:ro
+      - ./tools/sql/seed_character_load_tables_mariadb.sql:/docker-entrypoint-initdb.d/02-seed_tables.sql:ro
+      - ./tools/sql/seed_test_player_mariadb.sql:/docker-entrypoint-initdb.d/03-seed_test_player.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - t4cnet
+
+  t4cserver:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: t4c-server-linux:local
+    restart: unless-stopped
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      T4C_DB_HOST: mariadb
+      T4C_DB_PORT: "3306"
+      T4C_DB_NAME: ${T4C_DB_NAME:-t4c_server}
+      T4C_DB_USER: ${T4C_DB_USER:-t4cuser}
+      T4C_DB_PASSWORD: ${T4C_DB_PASSWORD:-T4Cpass2026!}
+      T4C_VERIFY_WDA_MD5: ${T4C_VERIFY_WDA_MD5:-1}
+    ports:
+      - "${T4C_UDP_PORT:-11677}:11677/udp"
+    volumes:
+      - ${T4C_RUNTIME_ASSETS:-./docker/runtime}:/opt/t4c-assets:ro
+      - t4c_logs:/srv/t4c/logs
+    networks:
+      - t4cnet
+
+volumes:
+  mariadb_data:
+  t4c_logs:
+
+networks:
+  t4cnet:
+    driver: bridge

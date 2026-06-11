@@ -1,0 +1,17 @@
+/******************************************************************************
+Modify for vs2008 (24/04/2009)
+******************************************************************************/
+
+
+#ifndef __SAMUEL_H
+#define __SAMUEL_H
+
+class Samuel : public NPCstructure{
+public:   
+    Samuel();
+   ~Samuel();
+    void Create( void );
+    void OnTalk( UNIT_FUNC_PROTOTYPE );
+};
+
+#endif

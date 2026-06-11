@@ -1,0 +1,80 @@
+/******************************************************************************
+Modify for vs2008 (26/04/2009)
+/******************************************************************************/
+#include "stdafx.h"
+#include "WDATable.h"
+
+/******************************************************************************/
+WDATable::WDATable( vir::Logger &cOutputLogger ) : cOutput( cOutputLogger )
+/******************************************************************************/
+{
+    dlDebug     = DL_DEBUG;
+    dlDebugHigh = 0;
+    dlInfo      = DL_INFO;
+    m_DisableIntlStrings = false;
+}
+/******************************************************************************/
+WDATable::~WDATable()
+/******************************************************************************/
+{
+}
+/******************************************************************************/
+//  Maps the debug level 'DEBUG' to the given debug level ID.
+void WDATable::MapDebugLogLevel(DEBUG_LEVEL dl) // The debug level.
+/******************************************************************************/
+{
+    dlDebug = dl;
+}
+/******************************************************************************/
+//  Maps the debug level 'DEBUG_HIGH' to the given debug level ID.
+void WDATable::MapDebugHighLogLevel(DEBUG_LEVEL dl) //  The debug level.
+/******************************************************************************/
+{
+    dlDebugHigh = dl;
+}
+/******************************************************************************/
+//  Maps the info level.
+void WDATable::MapInfoLogLevel(DEBUG_LEVEL dl) // The info lvel.
+/******************************************************************************/
+{
+    dlInfo = dl;
+}
+/******************************************************************************/
+void WDATable::DisableIntlStrings()
+/******************************************************************************/
+{
+    m_DisableIntlStrings = true;
+}
+/******************************************************************************/
+std::string WDATable::GetBareString( std::string str )
+/******************************************************************************/
+{
+    if( !m_DisableIntlStrings )
+	{
+        return str;
+    }
+
+    if( str.size() < 2 )
+	{
+        return str;
+    }
+
+    if( str.at( 0 ) != '[' )
+	{
+        return str;
+    }
+
+    int i;
+    for( i = 1; i < str.size(); i++ )
+	{
+        if( str.at( i ) == ']' )
+		{
+            if( i + 1 >= str.size() )
+			{
+                return "";
+            }
+            return str.substr( i + 1, std::string::npos );
+        }
+    }
+    return str;
+}

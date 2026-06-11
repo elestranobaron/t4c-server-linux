@@ -1,0 +1,14 @@
+Assets runtime serveur T4C
+==========================
+
+Source copiée depuis :
+  /mnt/hard/underground/Nouveau dossier (2)/T4C_V1R7X/1.7/1.7
+
+Déploiement de référence :
+  /mnt/hard/underground/Nouveau dossier (2)/T4C_V1R7X/1.7/1.7/T4CServer/T4CServer172
+
+Regénérer :
+  /mnt/debian/home/tom/Public/FinalStEp0/T4Serv3/scripts/copy_server_runtime.sh
+
+Variables :
+  T4C_SERVER_ASSET_SRC  — racine archive 1.7 (défaut ci-dessus)

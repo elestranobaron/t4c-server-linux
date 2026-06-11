@@ -1,0 +1,302 @@
+Note:  COmmand qui reset uniquement 1 player et non tous le serveur
+1.71 rev 1.64.0  -->  1.71 rev 1.65.0 
+  -1.73 Add NMS Event management
+  -Add New NPC Instruction to see trade points viaNPC
+  -Fix Arena Item XP and GOLD scroll item ID on potion structure. Now we can setup list on panel
+  -Fix When reset boust equip we not unequip item on still list
+  
+
+1.71 rev 1.63.0  -->  1.71 rev 1.64.0 
+   -ADD NMSGOLD on auction house BUY now ONLY...
+
+1.71 rev 1.62.0  -->  1.71 rev 1.63.0 
+	-FIX new spell requirement validation...
+	   Add STR, END, AGI and point to Attack, archery, dodge and critical strike
+	-FIX Lost boust sometime on connect when black screen...
+	   
+1.71 rev 1.61.0  -->  1.71 rev 1.62.0 
+	-Add new spell requirement validation...
+	   Add STR, END, AGI and point to Attack, archery, dodge and critical strike
+
+1.71 rev 1.60.0  -->  1.71 rev 1.61.0 
+	-Add Add QuestBook journal support
+
+1.71 rev 1.59.0  -->  1.71 rev 1.60.0 
+	-Add portail ile griffon
+	-add log if loadcharacter fail
+	
+
+1.71 rev 1.58.0  -->  1.71 rev 1.59.0 
+	-Fix Bug on StartgetObject for arene... need to valid TYPE do make sure we not make memory overflow	
+	-mod make cleanup on arena LOG to differency ARENAMAster 1 and 2 and game ID
+	-Add arena 1 and 2 validation to make sure we not try get out of range arena ID	
+	-mod/fix RP Master to support directly player pointer... use ID can cause deadlock
+
+1.71 rev 1.57.0  -->  1.71 rev 1.58.0 
+	-Fix arene change logical to insert into arene...
+	-Add validation to make sure no player connect on arene ZONE...
+
+1.71 rev 1.56.0  -->  1.71 rev 1.57.0 
+	- Fix Arene Group error
+	- Fix Save MODO god Flags
+1.71 rev 1.55.0  -->  1.71 rev 1.56.0 
+	- Chnagement des arene1master pour avoir uniquement 1 code pour toutes les arene de ce type de jeux
+	  il y aura autre code lorsque le jeux sera different...
+
+1.71 rev 1.53.0  -->  1.71 rev 1.55.0 
+	- Fix AUction duplicate items (bug buy item with 0).
+	- Add arena manager, arena model 1 support only in beta mode.
+	- 
+
+1.71 rev 1.52.0  -->  1.71 rev 1.53.0 
+	- Add Smile options
+	- Fix player chest char item flags
+
+1.71 rev 1.51.0  -->  1.71 rev 1.52.0 
+	- new chest list system
+	- Rp interaction now have class
+	
+
+1.71 rev 1.50.0  -->  1.71 rev 1.51.0 
+	-new PVP system...
+	
+	-reset honor and crime point to 0
+	-Note delete flag __FLAG_NMS_DEATH_HLL                 20001 in database on server update
+	-Note delete flag __FLAG_NMS_DEATH_HLL_CNT             20003 in database on server update
+	-Note delete flag __FLAG_IF_PLAYER_IS_GR               20111 in database on server update
+	-Note delete flag __FLAG_DEATH_LOST_GOLD               20171 in database on server update
+
+1.71 rev 1.44.0  -->  1.71 rev 1.50.0 
+	-Fix the webpatch to send new webpatch config... on new command ID
+	-Change in phase RP... recode of 50% of it to solve many bugs...
+
+1.71 rev 1.43.0  -->  1.71 rev 1.44.0 
+	-Fix Rp Interaction crash change container
+	-Add GM Command to manage Integration RP
+	   INTEGRACTIONRP on/off
+	   RPGETLIST
+	   RPTERMINATERP $         Message ID
+
+1.71 rev 1.42.0  -->  1.71 rev 1.43.0 
+	-Fix Rp Interaction exchange points to 500 before 100
+
+1.71 rev 1.41.0  -->  1.71 rev 1.42.0 
+-Fix SaveAll( void )
+Add BD playingCharacters "RPXp" and "RPXpPoint"   int 4 NOT NUL Default 0
+-Add RP Integration system...
+-Fix Immobilisation skill
+
+
+1.71 rev 1.40.0  -->  1.71 rev 1.41.0 
+-Fix AH not flag changement to player chest and with this player chest not save...
+-Fix Save boosts for player Items.
+
+REAL RELEASE to 1.71
+
+
+1.71 rev 1.39.0  -->  1.71 rev 1.40.0 
+-Mod Save player chest only if content change
+-Fix Auction house now keep the item charge value
+-Fix many BD request in Guild and Auction House
+-Mod Make a cleanup on database request and auto commit
+-Add GOD_CAN_CHANGE_SETTINGS //use to all server option settings... 
+	List of command affected... :
+		SYSTEMSTATUS
+		SYSTEMLIST
+		RPSYSTEM
+		PVPSYSTEM
+		DUELSYSTEM
+		SERVERALLCPU
+		SERVEREXTBDCHECK
+		GMMSGSYSTEM
+		JAILSYSTEM
+		FORCEDEATHRECALL
+		PSEUDONAMESYSTEM
+		CCSHORTCUTSYSTEM
+		XPSTATSYSTEM
+		UDPFILTERSYSTEM
+		UDPLOGSYSTEM
+		RELOADSYSTEM
+		SEND CONNECT EQUIPEMENT
+		SIMPLE NPC ONPOPUP
+		EQUILIBRAGESYSTEM OLD SKILL NEW FORMULA 
+		EQUILIBRAGESYSTEM NEW SKILL 
+		EQUILIBRAGESYSTEM NEW XP CURVE
+		GUILDSYSTEM
+		AHSYSTEM
+		PROFESSION
+		DAMAGEHEALSYSTEM 
+		BANKMANAGEMENT
+		SCROLLXPMANAGEMENT
+		COMMMEGAPACK
+		COMMCOMPRESSION
+		ANTIPLUGSYSTEM
+		ANTIPLUGDELAY
+		AHEXPIREALL
+		FORCE RESET BOOST EQUIP NEXT REBOOT
+		NMSGOLDSYSTEM
+
+1.71 rev 1.38.0  -->  1.71 rev 1.39.0 
+-Fix SaveGuildChest BD request... 
+
+1.71 rev 1.36.0  -->  1.71 rev 1.38.0 
+-Mod Profession now log into profession.log
+-Add command to enable / disable the connection equiped player item
+-Add command to enable / disable the SimpleNPC onPopup command
+-Mod System process to manage Save Ah and guild in now 120 sec and only if chnaged
+-
+
+1.71 rev 1.35.0  -->  1.71 rev 1.36.0 
+-Fix competence formula...
+-in debug solution remove pre build command    del $(IntDir)\Version.obj
+
+1.71 rev 1.34.0  -->  1.71 rev 1.35.0 
+-Add option in panel to reset profession skill or not on remort.
+-Fix Set unit_map under critical section
+-Fix some new skill formula
+
+1.71 rev 1.33.0  -->  1.71 rev 1.34.0 
+-Fix std::map management for the unit_map and thread list (server leack)
+-Fix OnPopup sor simplemonster now run keyworld .
+-Add flag __FLAG_RESET_BOUST_EQUIP_POS_USER_ONLY (20182) if set to 1 the server will reset boosts and equip for this user only
+
+
+1.71 rev 1.32.0  -->  1.71 rev 1.33.0 
+-Fix Remove seraph wings when use NMSgold to get a dechu same level
+-Fix Remove item from guild chest now log the real qty.
+
+1.71 rev 1.31.0  -->  1.71 rev 1.32.0 
+-------------------------------------
+-Add new GM command to remove formule from user REMOVE FORMULE $ FROM $
+-Add new GM Command to for server clean BOOST table and unequip all player and teleport to safe zone FORCE RESET BOOST EQUIP NEXT REBOOT
+-Fix Skill Immoobilization and armor penetrator
+-Fix now can start only 1 server instance
+-Fix Server profession is sorted by skill ID value
+
+Note:
+1.71 rev 1.30.0  -->  1.71 rev 1.31.0 
+-------------------------------------
+- Fix ItemInfo changer le map par une list
+
+1.71 rev 1.29.0  -->  1.71 rev 1.30.0 
+-------------------------------------
+- Add new server floor type  (arene with cast spell when walk over)
+- Add on arene possibility to send sysperso when player die on this arene
+
+1.71 rev 1.28.0  -->  1.71 rev 1.29.0 
+-------------------------------------
+-Add Automated wda maposerver and profession file for NMS release
+
+1.71 rev 1.27.0  -->  1.71 rev 1.28.0 
+-------------------------------------
+-Fix Spell, invisibility and invisibility remove effect crash server
+-Fix mob not move attack target
+
+1.71 rev 1.26.0  -->  1.71 rev 1.27.0 
+-------------------------------------
+-Mod BCObjectChanged to add param to 1 when is a DEAD change to make sure skin item will not gbhost and die on client
+-Fix Guild broadcast error when guild name is NULL
+
+1.71 rev 1.25.0  -->  1.71 rev 1.26.0 
+-------------------------------------
+-Fix primal Scream , now will get only monster / npc who can attack.
+
+1.71 rev 1.24.0  -->  1.71 rev 1.25.0 
+-------------------------------------
+-fix Crash when put item with % character in name...
+
+1.71 rev 1.23.0  -->  1.71 rev 1.24.0 
+-------------------------------------
+-Fix skill error (critical strike, stunt blow)
+
+1.71 rev 1.22.0  -->  1.71 rev 1.23.0 
+-------------------------------------
+-Fix critical strike formula
+-Fix lost critical strike when reborn
+
+1.71 rev 1.20.0  -->  1.71 rev 1.22.0  //1.21 is RM temporary release
+-------------------------------------
+-Fix unit Effect to fix recursive between multiple function
+-Fix Save effect
+-Fix Stun Blow
+-Fix Lockout temporary problem when the lock time is completed
+-Fix Blocked NPC always attack...  now attack only if check CAn Attack is checked
+-Fix now can train more than 256 stat points...
+-Fix nowkeep metier when reload / reborn...
+-Add Cann Reset Boust equiped items and reconnec on safe zone with option in panel
+-Add log when player start a RELOAD
+-Mod Change quest XP for NMS Build
+
+1.71 rev 1.19.0  -->  1.71 rev 1.20.0
+-------------------------------------
+-Add config to set the max formula for guild chest
+-Fix New Xp and MP formula
+-Fix Gold and Xp Scroll management and On Reload
+-Fix Dechu reborn to save bank flags
+
+1.71 rev 1.18.0  -->  1.71 rev 1.19.0
+-------------------------------------	
+-Add .Return now save to flag
+-Fix Drop when HLL
+
+
+1.71 rev 1.17.0  -->  1.71 rev 1.18.0
+-------------------------------------
+-Fix possibility to user stay locked on connections
+-Fix Deadlock with XP and gold stat
+-Fix Custom sanctuary when user remort
+-Fix F9 Gm NPC Command now not duplicate WDA npc in DLL
+-Fix SQL Injection
+-Fix GM Command View XP to return good xp value
+-Add GM command START1APRIL message    //this commande send to client event to start small 1st april animation with custom message
+-Add Option to exclup DLL NPC from registering
+-Add flag 20055 et 20056 at DeathNMS  (abse statistic who kin and who die like old death)
+-Add Server time synchronization every 15 minutes
+-Add Server control setting to define the local talk range
+
+1.71 rev 1.16.0  -->  1.71 rev 1.17.0
+-------------------------------------
+-Change GM Request system to save request on database.
+-Fix Lock problem with multiple units.
+
+
+1.71 rev 1.15.0  -->  1.71 rev 1.16.0
+-------------------------------------
+-Fix Deadlock Possibility on Database connection
+-Fix the custom death pos, start pos and sanctuary pos
+-Fix Skill to prevent bad attack over damage
+-Fix Valid special character to -äïëöüéèàùâîêôû
+-Fix Set the profession list ordered by SKILL level
+-Fix the main console to work again with t4cshell.exe tools
+-Fix possible crash with loading guild chest
+-Fix Jail spell key, custom sanctury and custom start pos
+-Add possibility setup minimum intervale of time between item use ou equip item.
+-Add SpellEffect drainmana, add possibility to drain player mana with a spell
+
+
+
+1.71 rev 1.14.0  -->  1.71 rev 1.15.0
+-------------------------------------
+-Fix bugs when player exception to make sure player is unlocked...
+-Add SpellEffect takeGold to add possibility rob gold by a spell
+
+
+1.71 rev 1.13.0  -->  1.71 rev 1.14.0
+-------------------------------------
+- Fix Auction house chest:  On AH deposit item, if chest full item is lost, now AH keep item and send message to player.
+- Fix Deadlock possibility in NPC Thread.
+- Fix Deadlock possibility with Trade system.
+- Fix Change many cast spell to simply broadcast effect to not manage all spell system for nothing...
+  With this all server receive spell effect no need to create new spell...
+- Fix Change the Deadh Spell ID to an Effect ID only and broadcast this effect.
+- Fix the PVP system jail spell ID, now can me chnage inside control panel.
+- Fix crash possibility on some networks packets.
+- Fix crash possibility on log system.
+- Fix deadlock when guild rename.
+- Add randomly blood effect on player HIT.
+- Add security level (no detail here to not show old problem)
+
+
+
+... -> 1.71 rev 1.13.0
+	creation fichier...

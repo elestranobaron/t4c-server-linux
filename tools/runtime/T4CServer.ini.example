@@ -1,0 +1,23 @@
+; Copier vers build/T4CServer.ini et adapter chemins + ODBC.
+; Le serveur lit ce fichier à côté de l'exécutable (build/T4CServer).
+
+[Authentication]
+AuthenticationMethod=1
+ODBC_DSN=T4C Server Authentication
+ODBC_TABLE=T4CUsers
+ODBC_NAME_FLD=Account
+ODBC_PWD_FLD=Password
+ODBC_DB_USER=
+ODBC_DB_PWD=
+ODBC_WHERE=
+ODBC_DEDUCT_CREDITS=1
+PASSWORD_CASE=0
+PASSWORD_ENCRYPTION=0
+
+[characters]
+; DB_USER / DB_PWD = credentials ODBC pour la base personnages (si utilisé)
+
+[Server]
+; Port UDP jeu, chemins Lokalise / maps / .wda : voir votre ancien T4CServer.ini Windows
+; Exemple (à adapter) :
+; Version=14

@@ -1,0 +1,332 @@
+/******************************************************************************
+Modify for vs2008 (26/04/2009)
+/******************************************************************************/
+#include "stdafx.h"
+#include "WDACreatures.h"
+
+using namespace std;
+
+/******************************************************************************/
+WDACreatures::WDACreatures( vir::Logger &cOutputLogger ) : WDATable( cOutputLogger )
+/******************************************************************************/
+{
+}
+/******************************************************************************/
+WDACreatures::~WDACreatures()
+/******************************************************************************/
+{
+}
+/******************************************************************************/
+//  Returns a vector of creature data.
+std::vector< WDACreatures::CreatureData > &WDACreatures::GetCreatures( void )
+/******************************************************************************/
+{
+    return vCreatures;
+}
+/******************************************************************************/
+// Creates from a wdaFile.
+void WDACreatures::CreateFrom(WDAFile &wdaFile, bool createReadOnly)
+/******************************************************************************/
+{
+    cOutput.Log(
+        dlInfo,
+        "\n--WDA--------------"
+        "\nLoading creatures."
+        "\n"
+    );
+
+    const long posStart = wdaFile.Tell();
+
+    // Get the quantity of objects
+    DWORD dwSize;
+    wdaFile.Read( dwSize );
+    fprintf(stderr, "[WDACreatures] CreateFrom pos=%ld, loading %u creatures…\n",
+        posStart, (unsigned)dwSize);
+    fflush(stderr);
+       
+    // Scroll through the list of objects.
+    DWORD i;
+    for( i = 0; i != dwSize; i++ )
+	{
+        if( (i % 100) == 0 ){
+            fprintf(stderr, "[WDACreatures]   creature %u / %u, file pos=%ld\n",
+                (unsigned)i, (unsigned)dwSize, wdaFile.Tell());
+            fflush(stderr);
+        }
+        CreatureData cCreature;
+
+        wdaFile.Read( cCreature.dwBindedID );
+        wdaFile.Read( cCreature.csID );
+        wdaFile.Read( cCreature.csName );
+        wdaFile.Read( cCreature.dwSTR );
+        wdaFile.Read( cCreature.dwEND );
+        wdaFile.Read( cCreature.dwAGI );
+        wdaFile.Read( cCreature.dwINT );
+        wdaFile.Read( cCreature.dwWIL );
+        wdaFile.Read( cCreature.dwWIS );        
+        wdaFile.Read( cCreature.dwLCK );
+        wdaFile.Read( cCreature.dwAirResist );
+        wdaFile.Read( cCreature.dwEarthResist );
+        wdaFile.Read( cCreature.dwWaterResist );
+        wdaFile.Read( cCreature.dwFireResist );
+        wdaFile.Read( cCreature.dwDarkResist );
+        wdaFile.Read( cCreature.dwLightResist );
+        wdaFile.Read( cCreature.dwAirPower );
+        wdaFile.Read( cCreature.dwEarthPower );
+        wdaFile.Read( cCreature.dwWaterPower );
+        wdaFile.Read( cCreature.dwFirePower );
+        wdaFile.Read( cCreature.dwDarkPower );
+        wdaFile.Read( cCreature.dwLightPower );
+        wdaFile.Read( cCreature.dwLevel );
+        wdaFile.Read( cCreature.dwHP );
+        wdaFile.Read( cCreature.dwDodgeSkill );
+        wdaFile.Read( cCreature.dblAC );
+        wdaFile.Read( cCreature.dwAppearance );
+        wdaFile.Read( cCreature.dwDressBody );
+        wdaFile.Read( cCreature.dwDressFeet );
+        wdaFile.Read( cCreature.dwDressGloves );
+        wdaFile.Read( cCreature.dwDressHelm );
+        wdaFile.Read( cCreature.dwDressLegs );
+        wdaFile.Read( cCreature.dwDressWeapon );
+        wdaFile.Read( cCreature.dwDressShield );
+        wdaFile.Read( cCreature.dwDressCape );
+        wdaFile.Read( cCreature.dwAggressivness );
+        wdaFile.Read( cCreature.dwClanID );
+        wdaFile.Read( cCreature.dwSpeed );
+        wdaFile.Read( cCreature.dblXPperHit );
+        wdaFile.Read( cCreature.dblXPperDeath );
+        wdaFile.Read( cCreature.dwMinGiveGold );
+        wdaFile.Read( cCreature.dwMaxGiveGold );
+        {
+            bool boCanAttack = false;
+            wdaFile.Read( boCanAttack );
+            cCreature.boCanAttackWDA = boCanAttack;
+        }
+        
+
+        cCreature.csName = GetBareString( cCreature.csName );
+
+        // Load attacks.
+        {
+            DWORD dwSize;
+            wdaFile.Read( dwSize );            
+            DWORD i;
+            for( i = 0; i != dwSize; i++ )
+			{
+                CreatureAttack cAttack;
+
+                wdaFile.Read( cAttack.csDmgRoll );
+                wdaFile.Read( cAttack.dwAttackSkill );
+                wdaFile.Read( cAttack.dwAttackPercentage );
+                wdaFile.Read( cAttack.dwAttackSpell );
+                wdaFile.Read( cAttack.dwAttackMinRange );
+                wdaFile.Read( cAttack.dwAttackMaxRange );
+
+                cCreature.vAttacks.push_back( cAttack );
+            }
+        }
+        // Save death flags.
+        {
+            DWORD dwSize;
+            wdaFile.Read( dwSize );            
+            DWORD i;
+            for( i = 0; i != dwSize; i++ )
+			{
+                CreatureDeathFlag cFlag;
+
+                wdaFile.Read( cFlag.dwFlag );
+                wdaFile.Read( cFlag.dwFlagValue );
+                wdaFile.Read( cFlag.boIncrement );
+
+                cCreature.vDeathFlags.push_back( cFlag );
+            }
+        }
+        // Save items
+        {
+            DWORD dwSize;
+            wdaFile.Read( dwSize );            
+            DWORD i;
+            for( i = 0; i != dwSize; i++ )
+			{
+                CreatureDeathItem cItem;
+                
+                wdaFile.Read( cItem.dwItemID );
+                wdaFile.Read( cItem.dblDropPercentage );
+
+                cCreature.vItems.push_back( cItem );
+            }
+        }
+
+        cCreature.m_ReadOnly = createReadOnly;
+
+        vCreatures.push_back( cCreature );
+    }
+    fprintf(stderr, "[WDACreatures] CreateFrom done: %u creatures, pos=%ld -> %ld\n",
+        (unsigned)dwSize, posStart, wdaFile.Tell());
+    fflush(stderr);
+}
+
+namespace {
+
+const char *WdaBaseName( const std::string &path )
+{
+    const char *base = path.c_str();
+    const char *s = base;
+    for( ; *s != '\0'; ++s ){
+        if( *s == '/' || *s == '\\' ){
+            base = s + 1;
+        }
+    }
+    return base;
+}
+
+struct WdaCreaturesSkipEntry {
+    const char *name;
+    long startPos;
+    long endPos;
+};
+
+const WdaCreaturesSkipEntry g_creatureSkipTable[] = {
+    { "T4C Worlds.WDA", 24259466L, 24347015L },
+    { "T4C Edit.WDA",   73203L,    94690L },
+};
+
+void SkipOneCreature( WDAFile &wdaFile )
+{
+    DWORD dwBindedID = 0;
+    std::string csID, csName;
+    DWORD dwDummy = 0;
+    double dblDummy = 0.0;
+    bool boDummy = false;
+
+    wdaFile.Read( dwBindedID );
+    wdaFile.Read( csID );
+    wdaFile.Read( csName );
+    for( int stat = 0; stat < 22; stat++ ){
+        wdaFile.Read( dwDummy );
+    }
+    wdaFile.Read( dblDummy );
+    for( int dress = 0; dress < 10; dress++ ){
+        wdaFile.Read( dwDummy );
+    }
+    wdaFile.Read( dwDummy );
+    wdaFile.Read( dwDummy );
+    wdaFile.Read( dblDummy );
+    wdaFile.Read( dblDummy );
+    wdaFile.Read( dwDummy );
+    wdaFile.Read( dwDummy );
+    wdaFile.Read( boDummy );
+
+    DWORD dwAttacks = 0;
+    wdaFile.Read( dwAttacks );
+    DWORD j = 0;
+    for( j = 0; j < dwAttacks; j++ ){
+        std::string csDmgRoll;
+        wdaFile.Read( csDmgRoll );
+        wdaFile.Read( dwDummy );
+        wdaFile.Read( dwDummy );
+        wdaFile.Read( dwDummy );
+        wdaFile.Read( dwDummy );
+        wdaFile.Read( dwDummy );
+    }
+
+    DWORD dwDeathFlags = 0;
+    wdaFile.Read( dwDeathFlags );
+    for( j = 0; j < dwDeathFlags; j++ ){
+        wdaFile.Read( dwDummy );
+        wdaFile.Read( dwDummy );
+        wdaFile.Read( boDummy );
+    }
+
+    DWORD dwItems = 0;
+    wdaFile.Read( dwItems );
+    for( j = 0; j < dwItems; j++ ){
+        wdaFile.Read( dwDummy );
+        wdaFile.Read( dblDummy );
+    }
+}
+
+void SkipCreaturesSlow( WDAFile &wdaFile )
+{
+    DWORD dwCreatures = 0;
+    wdaFile.Read( dwCreatures );
+    DWORD i = 0;
+    for( i = 0; i < dwCreatures; i++ ){
+        SkipOneCreature( wdaFile );
+    }
+}
+
+} // namespace
+
+void WDACreatures::SkipSection( WDAFile &wdaFile, const std::string &wdaPath )
+{
+    const long cur = wdaFile.Tell();
+    const char *base = WdaBaseName( wdaPath );
+    unsigned t = 0;
+
+    for( t = 0; t < sizeof( g_creatureSkipTable ) / sizeof( g_creatureSkipTable[0] ); t++ ){
+        const WdaCreaturesSkipEntry &e = g_creatureSkipTable[t];
+        if( strcmp( base, e.name ) != 0 ){
+            continue;
+        }
+        if( cur == e.startPos ){
+            wdaFile.Seek( e.endPos );
+            fprintf(
+                stderr,
+                "[WDACreatures] T4C_SKIP_CREATURES: %s seek %ld -> %ld (skip creatures, hives follow)\n",
+                e.name,
+                cur,
+                e.endPos
+            );
+            fflush( stderr );
+            return;
+        }
+        fprintf(
+            stderr,
+            "[WDACreatures] T4C_SKIP_CREATURES: %s pos=%ld expected %ld, slow skip\n",
+            e.name,
+            cur,
+            e.startPos
+        );
+        fflush( stderr );
+        break;
+    }
+
+    SkipCreaturesSlow( wdaFile );
+    fprintf(
+        stderr,
+        "[WDACreatures] T4C_SKIP_CREATURES: slow skip done for %s (now %ld)\n",
+        base,
+        wdaFile.Tell()
+    );
+    fflush( stderr );
+}
+/******************************************************************************/
+WDACreatures::CreatureData *WDACreatures::GetReadOnlyCreature( std::string id )
+/******************************************************************************/
+{
+    int i;
+    for( i = 0; i < vCreatures.size(); i++ )
+	{
+        if( vCreatures[ i ].m_ReadOnly && _stricmp( vCreatures[ i ].csID.c_str(), id.c_str() ) == 0 )
+		{
+            return &vCreatures[ i ];
+        }
+    }
+    return NULL;
+}
+/******************************************************************************/
+WDACreatures::CreatureData *WDACreatures::GetWritableCreature( std::string id )
+/******************************************************************************/
+{
+    int i;
+    for( i = 0; i < vCreatures.size(); i++ )
+	{
+        if( !vCreatures[ i ].m_ReadOnly && _stricmp( vCreatures[ i ].csID.c_str(), id.c_str() ) == 0 )
+		{
+            return &vCreatures[ i ];
+        }
+    }
+    return NULL;
+}
+

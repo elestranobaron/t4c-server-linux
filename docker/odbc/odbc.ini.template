@@ -1,0 +1,8 @@
+[T4C Server Authentication]
+Driver=MariaDB
+Server=${T4C_DB_HOST}
+Port=${T4C_DB_PORT}
+Database=${T4C_DB_NAME}
+User=${T4C_DB_USER}
+Password=${T4C_DB_PASSWORD}
+Option=3

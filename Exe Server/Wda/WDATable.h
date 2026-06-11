@@ -1,0 +1,36 @@
+/******************************************************************************
+Modify for vs2008 (26/04/2009)
+/******************************************************************************/
+#ifndef AFX_WDATABLE_H__8D88CCE9_D321_11D2_84AD_00E02922FA40__INCLUDED_
+#define AFX_WDATABLE_H__8D88CCE9_D321_11D2_84AD_00E02922FA40__INCLUDED_
+
+#if _MSC_VER >= 1000
+	#pragma once
+#endif // _MSC_VER >= 1000
+
+#include "WDAFile.h"
+#include "../Logger.h"
+
+/******************************************************************************/
+class WDATable
+/******************************************************************************/
+{
+public:
+    virtual ~WDATable();
+    virtual void CreateFrom( WDAFile &wdaFile, bool createReadOnly ) = 0;
+    virtual void MapDebugLogLevel( vir::DEBUG_LEVEL dl );
+    virtual void MapDebugHighLogLevel( vir::DEBUG_LEVEL dl );
+    virtual void MapInfoLogLevel( vir::DEBUG_LEVEL dl );
+    virtual void DisableIntlStrings();
+
+protected:
+    WDATable( vir::Logger &cOutputLogger );
+    vir::DEBUG_LEVEL dlInfo;
+    vir::DEBUG_LEVEL dlDebug;
+    vir::DEBUG_LEVEL dlDebugHigh;
+    vir::Logger &cOutput;
+    bool m_DisableIntlStrings;
+    std::string GetBareString( std::string str );
+};
+
+#endif // !defined(AFX_WDATABLE_H__8D88CCE9_D321_11D2_84AD_00E02922FA40__INCLUDED_)

@@ -1,0 +1,148 @@
+
+
+
+
+
+
+//1.20  A 1.21
+rewrite de...
+	 DispellEffect::Dispell
+	 Unit::DispellEffectWithFlag
+	 Unit::DispellEffects
+
+
+//de version 1.17 a 1.18
+packetmanager.cpp
+	PacketInterpret probleme quand use valide mais packet pas enregistrer le user reste locker inmdefiniment...
+
+character.cpp
+	AddstatLock XP and gold not the same to make sure eviter deadlock..
+	
+	
+changer plein de fichier relativement au systeme equilibrage... pour mettre les 3 truc en 3 flag distinct pour laisser au GM loption
+dactiver 1 ou lautre des 3 truc...     
+DWORD   dwEquilibrageNewCourbeXPEnable;DWORD   dwEquilibrageSkillNewFormulaEnable; DWORD   dwEquilibrageNewSkillEnable;
+
+NPCmacroScriptLng.cpp main.cpp
+	Fix the custom sanctuary position when user remort via oracle ou nmsgold.
+	
+DLL NPC, passer les portail des ile NMS dans la DLL NMS...
+
+healtEffect.cpp
+	Ajouter que si le healtheffect > 0 healing sinon rien...
+	
+lock.h
+	essayer de remettre le multilock comme avant voir car beaucoup de chose bizarre...
+
+Ajout du packet pour declancher une message de poisson davril dan sle client... et d<une commande GM...
+	
+npcstructire.cpp
+	modifier NPCstructure::OnServerInitialisation(0 pour eviter que les NPC dll et WDA se dedouble en f9 Gm command...
+
+//de version 1.16 a 1.17
+Packetmanager.cpp tfc_main.h main.cpp TFCMessagesHandler.cpp/.h and more...
+	Ajout de 3 packet pour les requete GM et tout ce que sa implique, validation callback, etc etc...
+	creation des fichiers GMMsgMaster .cpp et .h
+			
+lock.h
+	gros probleme dune autre version corriger de MultiLock... sa ne lockais plus les
+	les 2 lock mais bien que 1 seul gro prob... now sa lock les 2
+	
+
+//de version 1.15 a 1.16
+main.cpp / .h / character.cpp objectstructure.cpp 
+	read a list setupped by controlpanel to enable a time delay between item use.
+	and apply this list to the use item in RQUseObject and RQUseObject2 and RQUseObjectAppearance 
+objectstructure.cpp
+	onEquip message bloque le spell si litem est en list attente...
+
+tfcmessagesHandlers.cpp
+   RQFUNC_GetPersonnalPClist  separer 2 2 mode la liste des player direct leur equipement en async pour eviter deadlock de la bc CHAR
+player.cpp / .h
+   separer la foinction BuildAccountPlayerList(TFCPacket &sending); pour separer les equipement des playerlist
+   
+packetmanager.cpp
+	Ajouter le IP dans le log PacketInterpret() quand player ets a NULL 		
+	
+main.cpp
+	changement des parametre de customisation des start pos, sanctuaire pos et dead pos...
+	il ne lisait pas bonne key de registre aussi dwDeadSpellID et dwJailSpellCasted.
+	GR_LoadChestID // passe que le nom de la guild en parametre fuck le user sa peu causer crash si user plante au loading
+	GUILD_LOAD_CHEST // passe le param str qui ets le nomd e la guild uniquement plus de user...
+	
+character.cpp
+	changement de ADD_TO_TRAINING_LIST pour faire en sorte de mettre les akill en ortdre de ID...
+	pour eviter le bug des attack super puissnat...
+	chnagement de la fonction LearnProfessionFormule pour apprendre et trier la liste en orderd e formule skill...
+	chnagement de la requete theApp.AddGuildRequest(NULL,NULL,NULL,GUILD_LOAD_CHEST,0,0,0,0,GetGuildName(),"");
+	pour y passer que le nom de la guild et pas le user...  car si jamais le user deco ou plante durant le loading... 
+	la requete vas sexecuter avec des user inavlide et crash serveur...
+
+mainconsole.cpp
+	Modify la console pour faire marcher le t4cshell comme faut..	
+	
+playermanager.cpp
+	GetPlayerResourceFct,GetCharacterRessource, GetCharacterRessourceByID mis le loup count a 500 aulieu de 100 et mis un Sleep(0) pour liberer cpu ...
+   
+add spelleffect drainmana   
+
+-----------------------------------------------------------------------------------------------
+//de version 1.14 a 1.15
+PacketManager.cpp
+	Ajout d<un try catch pour unlocker la resource en cas de bug dans une des fonctions...
+	
+add spelleffect takegold
+	
+-----------------------------------------------------------------------------------------------
+//de version 1.13 a 1.14
+
+AuctionMaster.cpp
+modifi the give item to make sure the chest have alot of place to deposit items if not keep item and send message to player
+
+Trade.cpp
+flusher ce call dans trade cause un deadlock et pas utili le contenue inventaire est updater lorsque l inventaire est necessaire
+	m_ThisCharacter.SendBackpackContentPacket(); 
+
+Character.cpp
+Add blood effect randomly on the ONHIT event (30350)
+Change the CastSpellDirect into NMCombatMode for broadcast effect only not need to manage spell is only visual effect
+Change the CastSpellDirect into Player Death for broadcast effect only not need to manage spell is only visual effect
+with this we assume the control panel ID is setwith a SPELL Appearance ID and not Spell ID...
+
+Immobilization.cpp
+Change the CastSpellDirect into callback for broadcast effect only not need to manage spell is only visual effect
+
+Resurect.cpp
+Change the CastSpellDirect into callback for broadcast effect only not need to manage spell is only visual effect
+
+main.cpp
+Change the PVP System JAil spell ID to variable inside Contro panel.
+
+Lock.h
+modifier inline void MultiLock( CLock *cLockL, CLock *cLockR ) car il unlock le attaket et relook
+et sa sent le probleme... donc virer le sleep(0) et le 2e lock...
+
+ChatterChannels.cpp Character.cpp
+Fil les packet RQ_page, RQ_directtalk RQ_IndirectTalk RQ_Shout
+
+T4cLog.cpp
+Fix possibility crash dans les logs...
+
+
+TFCMessagesHandler.cpp
+   dans le pacjet register account on ne reenvoie pas les info de registration si deja enregiistrer...
+   Suprimer un sending qui netait jamais envoyer au serveur... 
+   dans le LoadPlayer, si le joueur est deja loader, on ne laccepte plus,... pas normal...
+   Block indirectTalk si le user nes pas in GAME...
+   
+SysopCmd.cpp
+	Ajout du lock dans la macro SEND_MESSAGE pas vraiment utiles...
+   
+PlayerManager.cpp
+	SetPlayerGuildNameAndCC manquais un unlock donc causait deadlock
+	
+   
+ajout d<une clee generer random entre 0 et 999999999.  Cette clef ets retourner au client dans le packet registerAccount
+apres pour les packet Put player in game, direct et indirect talk, si cette clef ne match pas un log dans LOG_CHEAT est inscrit
+puis le client est kicker out du jeux ...  Cette action permet deviter le soofing car les chance que la clef match son peu probable...
+et evite qu un hacker connect un personnage non a lui...   (les packet direct et indirect bloque toute les access au commande gm)

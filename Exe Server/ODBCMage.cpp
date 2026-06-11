@@ -1,0 +1,842 @@
+/******************************************************************************
+Modify for vs2008 (01/05/2009)
+/******************************************************************************/
+//	Filename: ODBCMage.c
+//	Author	: Guy Carbonneau
+//	Date	: 03.04.1998
+//
+//  Core of the class ODBC Mage.
+/******************************************************************************/
+//  Secondary author : Francois Leblanc
+//  Date : 21.04.1998
+//
+//  Modification to ODBC Mage class, 
+//  Added functionnalities to fetch and set row data.
+//  Added batch thread request functionnalities.
+
+//  must include when working with MFC
+#include "stdafx.h"
+#include "TFC Server.h"
+#include "ODBCMage.h"
+#include "DeadlockDetector.h"
+#include "RegKeyHandler.h"
+#include "Shutdown.h"
+#include "ThreadMonitor.h"
+
+/******************************************************************************/
+#define TRANSACT_SQL
+#define CURSOR_SQL SQL_CUR_USE_ODBC
+
+/******************************************************************************/
+extern CTFCServerApp theApp;
+
+CLock cODBCMage::cStaticLock;
+cODBCMage::StaticInit cODBCMage::m_StaticInit;
+
+/******************************************************************************/
+#ifndef _WIN32
+void cODBCMage::LogSqlError( const char *context ) const
+/******************************************************************************/
+{
+   BYTE lpbSQLState[ 16 ] = {0};
+   BYTE lpbErrorMsg[ 512 ] = {0};
+   SQLINTEGER dwNativeError = 0;
+   short wDummy = 0;
+
+   for( SQLRETURN ret = SQLError( henv, hdbc, hstmt, lpbSQLState, &dwNativeError, lpbErrorMsg,
+                                  (SQLSMALLINT)sizeof( lpbErrorMsg ), &wDummy );
+        ret == SQL_SUCCESS || ret == SQL_SUCCESS_WITH_INFO;
+        ret = SQLError( henv, hdbc, hstmt, lpbSQLState, &dwNativeError, lpbErrorMsg,
+                        (SQLSMALLINT)sizeof( lpbErrorMsg ), &wDummy ) )
+   {
+      std::fprintf( stderr, "[ODBC] %s state=%s native=%ld msg=%s\n",
+                    context, (const char *)lpbSQLState, (long)dwNativeError, (const char *)lpbErrorMsg );
+   }
+}
+#endif
+/******************************************************************************/
+void cODBCMage::CheckDisconnectError( void )
+/******************************************************************************/
+{
+    BYTE  lpbSQLState[ 6 ] = {0};
+    BYTE lpbErrorMsg[ 200 ];
+    SQLINTEGER dwNativeError;
+    short wDummy = 0;
+
+    SQLError( henv, hdbc, hstmt, lpbSQLState, &dwNativeError, lpbErrorMsg, 200, &wDummy );        
+    
+    if( _stricmp( (const char *)lpbSQLState, "08S01" ) == 0 || 
+        _stricmp( (const char *)lpbSQLState, "08001" ) == 0 ||
+        _stricmp( (const char *)lpbSQLState, "08003" ) == 0 ||
+        _stricmp( (const char *)lpbSQLState, "08004" ) == 0 )
+	{
+
+        static bool shutdown = false;
+
+        if( !shutdown )
+		{
+            shutdown = true;
+            // Add the shutdown key to make sure the process won't start
+            // until 5 minutes.
+            RegKeyHandler regKey;
+            regKey.Open( HKEY_LOCAL_MACHINE, theApp.csT4CKEY);
+            regKey.WriteProfileInt( "SHUTDOWN", 1 );
+            regKey.Close();
+
+            _LOG_DEBUG
+                LOG_CRIT_ERRORS,
+                "T4C was shutdown because the ODBC connection is down."
+            LOG_
+
+            CString body;
+
+            body.Format(
+                "T4C was unable to establish a connection with the character database."
+                "\r\nThe server cannot run without a character database and has therefore"
+                "\r\nbeen shutdown for a minimum period of 5 minutes."
+                "\r\n"
+                "\r\nPlease verify your setup and correct the situation as soon as possible."
+                "\r\n"
+                "\r\nSQL Error:"
+                "\r\nSQL State     = %s"
+                "\r\nNative error  = %u"
+                "\r\nError Message = %s",
+                lpbSQLState,
+                dwNativeError,
+                lpbErrorMsg
+            );
+
+            _LOG_DEBUG
+                LOG_CRIT_ERRORS,
+                (LPCTSTR)body
+            LOG_
+
+            MessageBeep( -1 );
+
+            CShutdown::CreateShutdown( SHUTDOWN_NOW, true, /*true,*/ true );
+            CShutdown::StartShutdown();
+        }
+    }
+}
+/******************************************************************************/
+cODBCMage::StaticInit::StaticInit( void )
+/******************************************************************************/
+{
+    
+}
+/******************************************************************************/
+cODBCMage::cODBCMage()
+/******************************************************************************/
+{
+	Create();
+	ZeroMemory( lpszCurrentDSN, 20 );
+	ZeroMemory( lpszCurrentUser, 20 );
+	ZeroMemory( lpszCurrentPWD, 20 );
+
+    boShutdown = FALSE;
+    boStmtAlloc = false;
+
+	hThreadID = NULL;
+	hIoCompletionPort = NULL;
+}
+/******************************************************************************/
+cODBCMage::~cODBCMage()
+/******************************************************************************/
+{
+	Destroy();
+}
+/******************************************************************************/
+void cODBCMage::Lock( void )
+/******************************************************************************/
+{
+    cStaticLock.Lock();
+}
+/******************************************************************************/
+void cODBCMage::Unlock( void )
+/******************************************************************************/
+{
+    cStaticLock.Unlock();
+}
+/******************************************************************************/
+void cODBCMage::Create()
+/******************************************************************************/
+{
+	SQLAllocEnv(&henv);
+	SQLAllocConnect(henv, &hdbc);
+}
+/******************************************************************************/
+void cODBCMage::Destroy()
+/******************************************************************************/
+{
+	SQLFreeConnect(hdbc);
+	SQLFreeEnv(henv);
+}
+/******************************************************************************/
+void cODBCMage::Connect(LPCSTR szDataSource, LPCSTR szUsername, LPCSTR szPassword)
+/******************************************************************************/
+{
+	Lock();	
+	
+#ifndef _WIN32
+    // MariaDB/unixODBC: SQL_CUR_USE_ODBC requires SQLBindCol before SQLFetch; legacy code uses SQLGetData.
+    SQLSetConnectOption( hdbc, SQL_ODBC_CURSORS, SQL_CUR_USE_DRIVER );
+#else
+    SQLSetConnectOption( hdbc, SQL_ODBC_CURSORS, SQL_CUR_USE_ODBC );
+#endif
+    
+    // Updates the stored data source name and the current user names.
+    if( szDataSource != NULL )
+	{
+        strcpy_s( lpszCurrentDSN, 250, szDataSource );
+    }
+	else
+	{
+        strcpy_s( lpszCurrentDSN, 250, "DEFAULT" );
+    }
+	
+	TRACE( "\r\nTrying to connect to DSN %s", lpszCurrentDSN );
+	TRACE( "\r\nTrying to connect to DSN %s", szDataSource );
+
+	if( szUsername != NULL )
+	{
+		strcpy_s( lpszCurrentUser, 100, szUsername );
+	}
+	else
+	{
+		lpszCurrentUser[ 0 ] = 0;
+	}
+	if( szPassword != NULL )
+	{
+		strcpy_s( lpszCurrentPWD, 100, szPassword );
+	}
+	else
+	{
+		lpszCurrentPWD[ 0 ] = 0;
+	}
+	
+    SQLRETURN nRet = SQLConnect(hdbc, (unsigned char *)szDataSource, SQL_NTS, (unsigned char *)szUsername, SQL_NTS, (unsigned char *)szPassword, SQL_NTS);
+    if( nRet == SQL_SUCCESS_WITH_INFO || nRet == SQL_ERROR || nRet == SQL_INVALID_HANDLE )
+	{
+        // Verify that the connection could be accessed.
+        CheckDisconnectError();
+
+		BYTE lpbSQLState[ 200 ];		
+		BYTE lpbErrorMsg[ 200 ];
+		SQLINTEGER dwNativeError;
+		short wDummy;
+
+		SQLError( henv, hdbc, hstmt, lpbSQLState, &dwNativeError, lpbErrorMsg, 200, &wDummy );
+		if( nRet ==  SQL_ERROR || nRet == SQL_INVALID_HANDLE )
+		{
+			_LOG_DEBUG
+				LOG_DEBUG_LVL3,
+				"SQL ERROR [SQLConnect]:\n SQL State: %s\nNative Error: %u\nError message: %s", 
+				lpbSQLState,
+				dwNativeError,
+				lpbErrorMsg
+			LOG_
+		}
+		if( nRet ==  SQL_SUCCESS_WITH_INFO )
+		{
+			_LOG_DEBUG
+				LOG_DEBUG_LVL3,
+				"SQL SUCCESS WITH INFO [SQLConnect]:\n SQL State: %s\nNative Error: %u\nError message: %s", 
+				lpbSQLState,
+				dwNativeError,
+				lpbErrorMsg
+			LOG_
+		}
+	}
+	
+    // If statement hasn't already been allocated.
+    if( !boStmtAlloc )
+	{
+        boStmtAlloc = true;
+        // Allocate it.
+        SQLAllocStmt(hdbc, &hstmt);
+    }
+
+	Unlock();
+}
+/******************************************************************************/
+void cODBCMage::AllocStmt()
+/******************************************************************************/
+{
+	Lock();
+    if( !boStmtAlloc )
+	{
+        SQLAllocStmt(hdbc, &hstmt);
+	    boStmtAlloc = true;
+    }
+	Unlock();
+}
+/******************************************************************************/
+void cODBCMage::Disconnect()
+/******************************************************************************/
+{
+	Lock();
+    if( boStmtAlloc )
+	{
+        SQLFreeStmt(hstmt, SQL_DROP);
+    }
+    boStmtAlloc = false;
+	SQLDisconnect(hdbc);
+	Unlock();
+}
+/******************************************************************************/
+BOOL cODBCMage::ExecuteRequest(LPCSTR szField, LPCSTR szTablename, LPCSTR szWhereStmt)
+/******************************************************************************/
+{
+	CHAR szBuffer[1024];
+
+	sprintf_s(szBuffer, 1024, "select %s from %s %s", szField, szTablename, szWhereStmt);
+
+	SQLExecDirect(hstmt, (unsigned char *)szBuffer, SQL_NTS);
+
+	rc = SQLFetch( hstmt );
+
+	if(rc == SQL_SUCCESS)
+	{
+		return TRUE;
+	}
+	
+	return FALSE;	
+}
+/******************************************************************************/
+// Sets a connection option
+void cODBCMage::ConnectOption(
+ WORD wConnectOption, // The connection option to change. See SQLSetConnectOption
+ DWORD dwConnectValue // Its new value.
+)
+/******************************************************************************/
+{
+	SQLSetConnectOption( hdbc, wConnectOption, dwConnectValue );
+}
+/******************************************************************************/
+// Commits pending connection data to database.
+int cODBCMage::Commit( void )
+/******************************************************************************/
+{
+	if( SQLTransact( henv, hdbc, SQL_COMMIT ) == SQL_SUCCESS )
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+/******************************************************************************/
+// Rollsback all pending operations on the current connection.
+BOOL cODBCMage::Rollback( void )
+/******************************************************************************/
+{
+	if( SQLTransact( henv, hdbc, SQL_ROLLBACK ) == SQL_SUCCESS )
+	{
+		return TRUE;
+	}
+	return FALSE;
+}
+/******************************************************************************/
+// Fetches the next row in the current recordset.
+BOOL cODBCMage::Fetch( void )
+/******************************************************************************/
+{
+   SQLRETURN	sqlRet = SQLFetch( hstmt );
+	if( sqlRet == SQL_SUCCESS || sqlRet == SQL_SUCCESS_WITH_INFO )
+	{
+		return TRUE;
+	}
+//#ifdef _DEBUG
+	else
+	{
+		BYTE lpbSQLState[ 1024 ];		
+		BYTE lpbErrorMsg[ 1024 ];
+		SQLINTEGER dwNativeError;
+		short wDummy;
+
+		SQLError( henv, hdbc, hstmt, lpbSQLState, &dwNativeError, lpbErrorMsg, 1024, &wDummy );
+      if(sqlRet != 100)
+      {
+		   TRACE( "\r\nSQL ERROR [SQLFetch]:" );		
+		   TRACE( "\r\n\tSQL State: %s", lpbSQLState );
+		   TRACE( "\r\n\tNative Error: %u", dwNativeError );
+		   TRACE( "\r\n\tError message: %s", lpbErrorMsg );
+      }
+	} 
+//#endif
+
+	return FALSE;
+}
+/******************************************************************************/
+// Cancels a transactions.
+BOOL cODBCMage::Cancel( void )
+/******************************************************************************/
+{
+   if( SQLCloseCursor( hstmt ) == SQL_SUCCESS )
+   {
+      return TRUE;
+   }
+   return FALSE;
+}
+/******************************************************************************/
+// Sends a complete request to the currently connected ODBC driver.
+BOOL cODBCMage::SendRequest(
+ LPCTSTR lpszRequest, // The request to send.
+ bool    boKnownError // True if the request can knowingly generate an error.
+)
+/******************************************************************************/
+{
+	rc = SQLExecDirect(hstmt, (LPBYTE)lpszRequest, SQL_NTS);
+
+    if(rc == SQL_SUCCESS)
+	{
+		return TRUE;
+	}
+	else if (rc == SQL_SUCCESS_WITH_INFO) 
+	{
+		// Okay, it worked, no need to shutdown server...
+		// but we should take some notes to logs, so that we know SQL Server is complaining at us.
+		BYTE  lpbSQLState[ 6 ] = {0};
+		BYTE lpbErrorMsg[ 200 ];
+		SQLINTEGER dwNativeError;
+		short wDummy = 0;
+
+		SQLError( henv, hdbc, hstmt, lpbSQLState, &dwNativeError, lpbErrorMsg, 200, &wDummy );
+
+		_LOG_DEBUG
+			LOG_DEBUG_LVL3,
+			"SQL SQL_SUCCESS_WITH_INFO [SQLExecDirect]: Original SQL query statement: [ %s ]\n"
+			"SQL State: %s\n Native Error: %u\n Error message: %s\n", 
+			lpszRequest,
+			lpbSQLState,
+			dwNativeError,
+			lpbErrorMsg
+		LOG_
+
+		return TRUE;
+	}
+	else
+	{
+        // Verify that the connection was not closed.
+        CheckDisconnectError();
+
+        // If it is known that the function may return an error, return false immediatly.
+        if( boKnownError )
+		{
+            return FALSE;
+        }
+
+		// else, log the problem and try sending again!
+        _LOG_DEBUG
+            LOG_WARNING,
+            "SQLExecDirect failed, trying to re-send the request."
+        LOG_
+
+		rc = SQLExecDirect( hstmt, (LPBYTE)lpszRequest, SQL_NTS );
+
+		if( rc == SQL_SUCCESS || rc == SQL_SUCCESS_WITH_INFO){
+			_LOG_DEBUG
+				LOG_WARNING,
+				"SQLExecDirect failed, re-sending succeed."
+			LOG_
+			return TRUE;
+        }else{
+            BYTE  lpbSQLState[ 6 ] = {0};
+            BYTE lpbErrorMsg[ 200 ];
+            SQLINTEGER dwNativeError;
+            short wDummy = 0;
+
+            SQLError( henv, hdbc, hstmt, lpbSQLState, &dwNativeError, lpbErrorMsg, 200, &wDummy );
+
+            _LOG_DEBUG
+                LOG_CRIT_ERRORS, 
+                "Unable to complete ODBC query, accounting will fail. Query = %s",lpszRequest                                                
+            LOG_
+
+            _LOG_DEBUG
+                LOG_DEBUG_LVL3,
+                "SQL ERROR [SQLExecDirect]: Original SQL query statement: [ %s ]\n SQL State: %s\n"
+				" Native Error: %u\n Error message: %s", 
+				lpszRequest,
+				lpbSQLState,
+				dwNativeError,
+				lpbErrorMsg
+            LOG_
+        }
+	}
+	
+	return FALSE;	
+}
+/******************************************************************************/
+// This function fetches a DWORD from the current SQL row.
+RETCODE cODBCMage::GetDWORD(
+ UWORD		uwCol,		// Column to fetch data from.
+ LPDWORD	lpdwFetch	// DWORD pointer to put data in.
+)
+/******************************************************************************/
+{	
+    *lpdwFetch = 0;
+    rc = SQLGetData(hstmt, uwCol, SQL_C_ULONG, lpdwFetch, 0, NULL );	
+
+    if( rc != SQL_SUCCESS )
+	{
+			BYTE lpbSQLState[ 200 ];		
+			BYTE lpbErrorMsg[ 200 ];
+			SQLINTEGER dwNativeError;
+			short wDummy;
+
+			SQLError( henv, hdbc, hstmt, lpbSQLState, &dwNativeError, lpbErrorMsg, 200, &wDummy );
+			TRACE( "\r\nSQL ERROR [SQLGetData GetDWORD]:" );
+			TRACE( "\r\n\tSQL State: %s", lpbSQLState );
+			TRACE( "\r\n\tNative Error: %u", dwNativeError );
+			TRACE( "\r\n\tError message: %s", lpbErrorMsg );		
+    }
+ 	return rc;
+}
+/******************************************************************************/
+// This function fetches a DWORD from the current SQL row.
+RETCODE cODBCMage::GetSDWORD(
+ UWORD		uwCol,		// Column to fetch data from.
+ long 	    *lpdwFetch	// DWORD pointer to put data in.
+)
+/******************************************************************************/
+{	
+    *lpdwFetch = 0;
+    rc = SQLGetData(hstmt, uwCol, SQL_C_SLONG, lpdwFetch, 0, NULL );	
+
+    if( rc != SQL_SUCCESS )
+	{
+			BYTE lpbSQLState[ 200 ];		
+			BYTE lpbErrorMsg[ 200 ];
+			SQLINTEGER dwNativeError;
+			short wDummy;
+
+			SQLError( henv, hdbc, hstmt, lpbSQLState, &dwNativeError, lpbErrorMsg, 200, &wDummy );
+			TRACE( "\r\nSQL ERROR [SQLGetData GetSDWORD]:" );
+			TRACE( "\r\n\tSQL State: %s", lpbSQLState );
+			TRACE( "\r\n\tNative Error: %u", dwNativeError );
+			TRACE( "\r\n\tError message: %s", lpbErrorMsg );		
+    }
+ 	return rc;
+}
+/******************************************************************************/
+// This function fetches a WORD from the current SQL row.
+RETCODE cODBCMage::GetWORD(
+ UWORD		uwCol,		// Column to fetch data from.
+ LPWORD		lpwFetch		// WORD pointer to put data in.
+)
+/******************************************************************************/
+{
+	rc = SQLGetData(hstmt, uwCol, SQL_C_USHORT, lpwFetch, 0, NULL ) ;
+
+	return rc;
+}
+/******************************************************************************/
+// This function fetches a WORD from the current SQL row.
+RETCODE cODBCMage::GetSWORD(
+ UWORD		uwCol,		// Column to fetch data from.
+ short *    lpwFetch		// WORD pointer to put data in.
+)
+/******************************************************************************/
+{
+	rc = SQLGetData(hstmt, uwCol, SQL_C_SSHORT, lpwFetch, 0, NULL ) ;
+
+	return rc;
+}
+/******************************************************************************/
+// This function fetches a DWORD from the current SQL row.
+RETCODE cODBCMage::GetBYTE(
+ UWORD		uwCol,		// Column to fetch data from.
+ LPBYTE		lpbFetch	// DWORD pointer to put data in.
+)
+/******************************************************************************/
+{	
+	SQLLEN sdwMaxSize = 0;	
+	WORD wWord = 0;
+	
+	rc = SQLGetData( hstmt, uwCol, SQL_C_USHORT, &wWord, 0, NULL );
+	
+	*lpbFetch = (BYTE)wWord;
+	
+	return rc; 
+}
+/******************************************************************************/
+// This function returns a byte buffer fetched from a row.
+// NOTE: The caller is responsible for freeing the lpData created by this function.
+//		 If the returned buffer is NULL, no data was fetched and dwSize will equal 0.
+RETCODE cODBCMage::GetBLOB(
+ UWORD		uwCol,		// Column to fetch data from.
+ LPVOID		*lppData,	// Pointer to a pointer which will contain the data in row:column.
+ LPDWORD	lpdwSize	// Pointer to a DWORD which contains the size of the fetched buffer
+)
+/******************************************************************************/
+{		
+	LPBYTE lpResult = (LPBYTE)( *lppData );
+	SQLLEN sdwBufferSize = 0;
+	SQLLEN sdwNewSize = 0;
+	int nDummy;	// dummy buffer, to avoid some possible problems with a null data buffer.
+	
+	// Make a first query asking for 0 bytes, this should return the complete buffer size.
+	rc = SQLGetData( hstmt, uwCol, SQL_LONGVARBINARY, &nDummy, 0, &sdwBufferSize );
+
+	if( sdwBufferSize != SQL_NO_TOTAL && sdwBufferSize != 0 )
+	{
+		// Create the buffer to accomodate the request.
+		lpResult = new BYTE[ sdwBufferSize ];
+		*lpdwSize = sdwBufferSize;
+	
+		// Fetch the complete amount of data, now that we have the complete buffer.
+		rc = SQLGetData( hstmt, uwCol, SQL_LONGVARBINARY, lpResult, sdwBufferSize, &sdwNewSize );
+	}
+	else
+	{
+		lpResult = NULL;
+		*lpdwSize = 0;
+	}
+	
+	return rc; 
+}
+/******************************************************************************/
+// This function fetches a string from the current SQL row.
+RETCODE cODBCMage::GetString(
+ UWORD		uwCol,		// Column to fetch data from.
+ LPTSTR		lpszText,	// Pointer to a buffer which will contain the string.
+ int		nMaxSize	// Max size of the given character buffer.
+)
+/******************************************************************************/
+{
+	SQLLEN sdwNewMaxSize = 0;
+
+	rc = SQLGetData( hstmt, uwCol, SQL_C_CHAR, lpszText, nMaxSize, &sdwNewMaxSize );
+
+	return rc;
+}
+/******************************************************************************/
+// This function fetches a DWORD from the current SQL row.
+RETCODE cODBCMage::GetDouble(
+ UWORD		uwCol,		// Column to fetch data from.
+ double		*lpdblFetch	// double pointer to put data in.
+)
+// Return: RETCODE, the SQL return code of the query
+//////////////////////////////////////////////////////////////////////////////////////////
+{
+	return SQLGetData( hstmt, uwCol, SQL_C_DOUBLE, lpdblFetch, 0, NULL );
+}
+/******************************************************************************/
+// Returns the date from a field.
+RETCODE cODBCMage::GetDate(
+ UWORD uwCol,               // The field's column
+ SQL_DATE_STRUCT *lpSqlDate // The date structure to fill.
+)
+/******************************************************************************/
+{
+    SQLLEN nSize = 0;    
+    return SQLGetData( hstmt, uwCol, SQL_C_TYPE_DATE, &lpSqlDate, sizeof( SQL_DATE_STRUCT ), &nSize );
+}
+/******************************************************************************/
+// Initializes the write thread
+void cODBCMage::InitializeWriteThread( void )
+/******************************************************************************/
+{
+	if( hThreadID == NULL )
+	{
+		// Create the IO Completion port associated with the thread, before it starts.
+		hIoCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 1);
+
+		// Start the thread.
+      UINT threadId;
+      hThreadID = (HANDLE)_beginthreadex( NULL, 0, ODBCWriteThread    , this, 0, &threadId ); //OK: thread qui ecrit les donnees dans la BD
+      SetThreadPriority(hThreadID, THREAD_PRIORITY_BELOW_NORMAL);
+	}
+}
+/******************************************************************************/
+// Sends a batch of requests to the data source. Uses ODBCWrite thread to asynchronously
+// send the requests and report to callback function.
+void cODBCMage::SendBatchRequest(
+ TemplateList<SQL_REQUEST> *lptlRequests,	// List of requests to send
+ SQLTERMINATION lpTerminationCallback,		// Callback called upon batch request termination.
+ LPVOID lpData,								// User data to send to callback function.
+ LPTSTR lpszText							// Text that indicates the SendBatchRequest caller
+)
+/******************************************************************************/
+{
+   // Do not accept requests if shutting down.
+   /*
+   if( !boShutdown )
+   {
+   */
+      // Initialize thread
+      InitializeWriteThread();
+
+      BATCH_REQUEST *lpBatch = new BATCH_REQUEST;
+      lpBatch->lptlRequests = lptlRequests;
+      lpBatch->lpTerminationCallback = lpTerminationCallback;
+      lpBatch->lpData = lpData;
+      lpBatch->lpszText = lpszText;
+
+      PostQueuedCompletionStatus( hIoCompletionPort, 0, reinterpret_cast< std::uintptr_t >( lpBatch ), NULL );
+   //}
+}
+/******************************************************************************/
+// Shuts downs ODBC and assures all requests have been sent before returning.
+void cODBCMage::WaitForODBCShutdown( void )
+/******************************************************************************/
+{
+    // Now in shutdown mode.
+    boShutdown = TRUE;
+
+    // Send a STOP message to the io completion port.
+    //PostQueuedCompletionStatus( hIoCompletionPort, 1, NULL, NULL );
+
+    // Wait until ODBC thread terminates.
+    WaitForSingleObject( hThreadID, INFINITE );
+}
+/******************************************************************************/
+// This is the write thread. It only starts after the first call to SendBatchRequest.
+/******************************************************************************/
+unsigned int cODBCMage::ODBCWriteThread(LPVOID lpODBCObject) // The object
+{
+   CAutoThreadMonitor tmMonitor("ODBC Write Thread");
+   _LOG_DEBUG
+      LOG_DEBUG_LVL1,
+      "ODBCWriteThread Id=%u",
+      GetCurrentThreadId()
+      LOG_
+
+   cODBCMage *lpODBC = (cODBCMage *)lpODBCObject;
+   DWORD dwStopMessage = 0;	
+   LPOVERLAPPED s_oDummy;
+   std::uintptr_t dwlpBatch = 0;
+   SQL_REQUEST *lpRequest;
+   BATCH_REQUEST *lpBatch;
+   TemplateList <SQL_REQUEST> *lptlRequests;
+   BOOL boEndBatch;		
+
+   // Force thread to run on the first CPU.
+   //SetThreadAffinityMask( lpODBC->hThreadID, 1 );
+
+   CDeadlockDetector cDeadlockDetector;
+   cDeadlockDetector.RegisterThread( lpODBC->hThreadID, "ODBCWriteThread", 300000  );
+
+   CString csRequestLog;
+   
+
+   // Read until its time to terminate the thread.
+   while( dwStopMessage == 0 )
+   {
+      ENTER_TIMEOUT
+      // Get the queued requests
+      if( GetQueuedCompletionStatus( lpODBC->hIoCompletionPort, &dwStopMessage, &dwlpBatch, &s_oDummy, 2500 ))
+      {
+         LEAVE_TIMEOUT
+         // If this isn't a thread termination message
+         if( dwStopMessage == 0 )
+         {
+            boEndBatch = FALSE;
+
+            // Process the batch query
+            lpBatch = reinterpret_cast< BATCH_REQUEST * >( dwlpBatch );				
+            lptlRequests = lpBatch->lptlRequests;
+
+            // Lock ODBC
+            lpODBC->Lock();
+
+            DWORD dwBefore = GetRunTime();
+            // Scroll the requests
+            lptlRequests->ToHead();
+            while( lptlRequests->QueryNext() && !boEndBatch )
+            {
+               lpRequest = lptlRequests->Object();
+
+               
+               /*
+               //Tracing
+               char    chRequestTime[9]; 
+               _strtime_s( chRequestTime, 9 );
+               csRequestLog.Empty();
+               csRequestLog += chRequestTime;
+               csRequestLog += " ; ";
+               csRequestLog += lpRequest->csQuery;
+               csRequestLog += " ; ";
+               csRequestLog += lpBatch->lpszText;
+               csRequestLog += "\r\n";
+               _LOG_DEBUG
+                  LOG_DEBUG_HIGH,
+                  "-->>> %s",
+                  csRequestLog
+                  LOG_
+               */
+
+               if( !lpODBC->SendRequest( lpRequest->csQuery.c_str() ) )
+               {
+                  boEndBatch = TRUE;
+               }
+               KEEP_ALIVE
+               Sleep(0);
+            }
+
+            DWORD dwAfter = GetRunTime();
+
+            _LOG_DEBUG
+               LOG_DEBUG_HIGH,
+               "-->>> ODBC requests took %ums to send.",
+               dwAfter - dwBefore
+               LOG_
+
+            if( boEndBatch )
+            {
+               lpODBC->Rollback();					
+               if( lpBatch->lpTerminationCallback != NULL )
+               {
+                  // Call the callback function, batch request terminated.
+                  lpBatch->lpTerminationCallback( BATCH_FAILED, lpBatch->lpData );
+               }
+            }
+            else
+            {
+               lpODBC->Commit();
+               if( lpBatch->lpTerminationCallback != NULL )
+               {
+                  // Call the callback function, batch request terminated.
+                  lpBatch->lpTerminationCallback( BATCH_SUCCEEDED, lpBatch->lpData );
+               }
+            }
+
+            // Destroy each objects in list.
+            lptlRequests->AnnihilateList();
+            
+            // Unlock ODBC
+            lpODBC->Unlock();
+
+            if (lptlRequests != NULL)
+            {
+               delete lptlRequests;
+               lptlRequests = NULL;
+            }
+            if (lpBatch != NULL) 
+            {
+               delete lpBatch;
+               lpBatch = NULL;
+            }
+         }
+      }
+      else
+      {
+         if( lpODBC->boShutdown )
+         {
+            static int tryCount = 0;
+            if( tryCount > 0 )
+            {
+               _LOG_DEBUG
+                  LOG_DEBUG_LVL1,
+                  "ODBC was shutdown, writing thread empty."
+                  LOG_
+
+                  dwStopMessage = 1;
+            }
+            tryCount++;
+         }
+         LEAVE_TIMEOUT;
+      }
+   }
+   STOP_DEADLOCK_DETECTION
+   return 0;
+}

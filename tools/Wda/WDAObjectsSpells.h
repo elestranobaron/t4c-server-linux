@@ -1,0 +1,54 @@
+/******************************************************************************
+Modify for vs2008 (26/04/2009)
+/******************************************************************************/
+#if !defined(AFX_WDAOBJECTSSPELLS_H__FECB9F3A_D648_11D2_84B2_00E02922FA40__INCLUDED_)
+#define AFX_WDAOBJECTSSPELLS_H__FECB9F3A_D648_11D2_84B2_00E02922FA40__INCLUDED_
+
+#if _MSC_VER >= 1000
+	#pragma once
+#endif // _MSC_VER >= 1000
+
+#include "WDATable.h"
+
+class WDAObjects;
+/******************************************************************************/
+class WDAObjectsSpells : public WDATable  
+/******************************************************************************/
+{
+public:
+    // Only viewable by WDAObjects.
+    friend WDAObjects;
+    WDAObjectsSpells( vir::Logger &cLogger, vir::DEBUG_LEVEL dlHighDebug );
+	virtual ~WDAObjectsSpells();
+    // Accessors
+    DWORD GetSpellID( void );
+    DWORD GetMessageHook( void );
+    DWORD GetLevel( void );
+    void Setup( DWORD spellID, DWORD messageHook, DWORD level )
+	{
+        dwSpellID = spellID;
+        dwMessageHook = messageHook;
+        dwLevel = level;
+    }
+    // Deep-copy operator
+    void operator = ( const WDAObjectsSpells &cParam )
+	{
+       dwSpellID = cParam.dwSpellID;
+       dwMessageHook = cParam.dwMessageHook;
+       dwLevel = cParam.dwLevel;
+    };
+    bool operator == (const WDAObjectsSpells &c )
+	{
+        return dwSpellID == c.dwSpellID && dwMessageHook == c.dwMessageHook && dwLevel == c.dwLevel;
+    }
+    
+private:    
+    // Creates from a wdaFile.
+    virtual void CreateFrom( WDAFile &wdaFile, bool createReadOnly );
+    DWORD dwSpellID;
+    DWORD dwMessageHook;
+    DWORD dwLevel;
+
+};
+
+#endif // !defined(AFX_WDAOBJECTSSPELLS_H__FECB9F3A_D648_11D2_84B2_00E02922FA40__INCLUDED_)
