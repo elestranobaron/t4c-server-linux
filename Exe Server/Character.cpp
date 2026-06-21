@@ -14801,11 +14801,21 @@ void Character::StartGetObject(WorldPos wlPos,DWORD dwID)
    if(world)
    {
       lpuGet = world->FindNearUnit( wlPos, dwID );
+
+      // FIX ramassage : fallback grille spatiale -> registre global d'IDs.
+      if( !lpuGet )
+         lpuGet = Unit::GetByID( dwID );
+
       if( lpuGet && lpuGet->GetType() == U_OBJECT )
       {
          wlPos = lpuGet->GetWL();
-         // If the user is able to hold this item.
-         if( can_get( wlPos, static_cast< Objects *>( lpuGet ) ) )
+
+         // Sécurité : ne ramasser que si l'objet est dans le même monde et à portée
+         // (can_get revérifie la portée, ceci évite juste un fallback aberrant).
+         if( wlPos.world == GetWL().world &&
+             abs( wlPos.X - GetWL().X ) <= 5 &&
+             abs( wlPos.Y - GetWL().Y ) <= 5 &&
+             can_get( wlPos, static_cast< Objects *>( lpuGet ) ) )
          {
             BOOL bproceed = TRUE;
 
