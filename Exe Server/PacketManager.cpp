@@ -407,6 +407,7 @@ void CPacketManager::PacketInterpret(COMM_INTR_PROTOTYPE) // The packet data inf
    bool bValidRegister = true;
    if( rqPacketID == RQ_AuthenticateServerVersion || rqPacketID == RQ_ExitGame
        || rqPacketID == RQ_GetPersonnalPClist || rqPacketID == RQ_GetPersonnalPClistEquitSkin
+       || rqPacketID == RQ_DeletePlayer || rqPacketID == RQ_CreatePlayer || rqPacketID == RQ_Reroll
        || rqPacketID == RQ_PutPlayerInGame
        || rqPacketID == RQ_FromPreInGameToInGame
        || rqPacketID == RQ_GetNearItems
@@ -646,6 +647,7 @@ void CPacketManager::PacketInterpret(COMM_INTR_PROTOTYPE) // The packet data inf
                      CPlayerManager::FreePlayerResourceFct( lpPlayer );
 #ifndef _WIN32
                      if( rqPacketID == RQ_GetPersonnalPClist || rqPacketID == RQ_GetPersonnalPClistEquitSkin
+                         || rqPacketID == RQ_CreatePlayer || rqPacketID == RQ_DeletePlayer
                          || rqPacketID == RQ_FromPreInGameToInGame
                          || rqPacketID == RQ_GetNearItems || rqPacketID == RQ_GetSkillList
                          || ( rqPacketID >= RQ_MoveNorth && rqPacketID <= RQ_MoveNorthWest )
@@ -672,6 +674,7 @@ void CPacketManager::PacketInterpret(COMM_INTR_PROTOTYPE) // The packet data inf
                   {
 #ifndef _WIN32
                      if( rqPacketID == RQ_AuthenticateServerVersion || rqPacketID == RQ_GetPersonnalPClist
+                         || rqPacketID == RQ_CreatePlayer || rqPacketID == RQ_DeletePlayer
                          || rqPacketID == RQ_ExitGame || rqPacketID == RQ_RegisterAccount
                          || rqPacketID == RQ_PutPlayerInGame
                          || rqPacketID == RQ_FromPreInGameToInGame

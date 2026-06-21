@@ -844,16 +844,11 @@ BOOL Character::roll_stats()
          bRollWIL,
          bRollLCK );
 
-      /*SetSTR( static_cast< WORD >( rnd( 0, 4 ) + 6 + bRollSTR ) );
+      SetSTR( static_cast< WORD >( rnd( 0, 4 ) + 6 + bRollSTR ) );
       SetAGI( static_cast< WORD >( rnd( 0, 4 ) + 6 + bRollAGI ) );
       SetEND( static_cast< WORD >( rnd( 0, 4 ) + 6 + bRollEND ) );
       SetINT( static_cast< WORD >( rnd( 0, 4 ) + 6 + bRollINT ) );
-      SetWIS( static_cast< WORD >( rnd( 0, 4 ) + 6 + bRollWIS ) );*/
-      SetSTR( 20 );
-      SetAGI( 20 );
-      SetEND( 20 );
-      SetINT( 20 );
-      SetWIS( 20 );
+      SetWIS( static_cast< WORD >( rnd( 0, 4 ) + 6 + bRollWIS ) );
       SetLCK( 100 );
 
       SetSTR( GetSTR() > 22 ? 22 : GetSTR() );

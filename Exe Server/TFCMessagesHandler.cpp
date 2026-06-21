@@ -986,18 +986,7 @@ static void AsyncRQFUNC_FromPreInGameToInGame( LPVOID lpData )
       return;
    }
 
-   if( !user->UsePicklock( __FILE__, __LINE__ ) )
-   {
-      TFCPacket err;
-      err << (RQ_SIZE)RQ_FromPreInGameToInGame;
-      err << (char)1;
-      user->self->SendPlayerMessage( err );
-      std::fprintf( stderr,
-                    "[FromPreInGameToInGame] async: UsePicklock refuse pour %s\n",
-                    (LPCTSTR)user->GetAccount() );
-      delete lpParams;
-      return;
-   }
+   /* Picklock deja pris par RQFUNC_FromPreInGameToInGame (sync) — ne pas re-acquerir. */
 
    struct AutoExit
    {
@@ -1130,20 +1119,7 @@ void AsyncRQFUNC_PutPlayerInGame( LPVOID lpData )
    LPASYNC_PACKET_FUNC_PARAMS lpParams = (LPASYNC_PACKET_FUNC_PARAMS)lpData;
    Players *user = lpParams->user;
 
-#if !defined( _WIN32 )
-   if( !user->UsePicklock( __FILE__, __LINE__ ) )
-   {
-      TFCPacket busyReply;
-      busyReply << (RQ_SIZE)RQ_PutPlayerInGame;
-      busyReply << (char)7;
-      user->self->SendPlayerMessage( busyReply );
-      std::fprintf( stderr,
-                    "[PutPlayerInGame] async: UsePicklock refuse pour « %s »\n",
-                    (LPCTSTR)lpParams->strParam );
-      delete lpParams;
-      return;
-   }
-#endif
+   /* Picklock deja pris par RQFUNC_PutPlayerInGame (sync) — ne pas re-acquerir sur Linux. */
 
    struct AutoExit
    {
@@ -1970,6 +1946,22 @@ void TFCMessagesHandler::RQFUNC_QueryPatchServerInfo2( PACKET_FUNC_PROTOTYPE )
    RQ_FOOTER( "RQ_QueryPatchServerInfo2" )
 }
 
+static void RefreshAuthMenuRegistration( Players *user )
+{
+   if( user != NULL && !user->in_game && !user->IsDeleteFlags()
+       && user->GetKeyCode() != 0 && !user->registred )
+   {
+#ifndef _WIN32
+      std::fprintf( stderr,
+                    "[AUTH] RefreshAuthMenuRegistration compte='%s' key=%ld\n",
+                    (LPCTSTR)user->GetAccount(),
+                    static_cast<long>( user->GetKeyCode() ) );
+      std::fflush( stderr );
+#endif
+      user->registred = TRUE;
+   }
+}
+
 void TFCMessagesHandler::RQFUNC_AuthenticateServerVersion( PACKET_FUNC_PROTOTYPE )
 {
    RQ_HEADER;
@@ -1983,6 +1975,7 @@ void TFCMessagesHandler::RQFUNC_AuthenticateServerVersion( PACKET_FUNC_PROTOTYPE
 #endif
    if( user->IsDeleteFlags() )
       return;
+   RefreshAuthMenuRegistration( user );
    if( user->boLockedOut || !user->CanPaidPlay() || !user->CanConnectGMOnly())
    {
       return;
@@ -2173,6 +2166,9 @@ void TFCMessagesHandler::RQFUNC_UnequipObject(PACKET_FUNC_PROTOTYPE)
 void TFCMessagesHandler::RQFUNC_GetPersonnalPClist(PACKET_FUNC_PROTOTYPE)
 {
    RQ_HEADER;
+
+   RefreshAuthMenuRegistration( user );
+
 #ifndef _WIN32
    std::fprintf( stderr, "[AUTH] GetPersonnalPClist (26) compte='%s' registred=%d in_game=%d\n",
                  user ? (LPCTSTR)user->GetAccount() : "?",
@@ -2828,15 +2824,29 @@ void TFCMessagesHandler::RQFUNC_FromPreInGameToInGame(PACKET_FUNC_PROTOTYPE)
    if( user->boPreInGame && !user->in_game && !user->IsDeleteFlags() )
    {
       /* PutPlayerInGame() peut bloquer longtemps — ne jamais sur le thread UDP (cf. ref Linux). */
-      LPASYNC_PACKET_FUNC_PARAMS lpParams = new ASYNC_PACKET_FUNC_PARAMS;
-      lpParams->user = user;
-      lpParams->rqRequestID = rqRequestID;
-      lpParams->msg = NULL;
-      AsyncFuncQueue::GetMainQueue()->Call( AsyncRQFUNC_FromPreInGameToInGame, lpParams );
-      std::fprintf( stderr,
-                    "[FromPreInGameToInGame] enqueue async (Linux) pour %s\n",
-                    (LPCTSTR)user->GetAccount() );
-      std::fflush( stderr );
+      if( user->UsePicklock( __FILE__, __LINE__ ) )
+      {
+         LPASYNC_PACKET_FUNC_PARAMS lpParams = new ASYNC_PACKET_FUNC_PARAMS;
+         lpParams->user = user;
+         lpParams->rqRequestID = rqRequestID;
+         lpParams->msg = NULL;
+         AsyncFuncQueue::GetMainQueue()->Call( AsyncRQFUNC_FromPreInGameToInGame, lpParams );
+         std::fprintf( stderr,
+                       "[FromPreInGameToInGame] enqueue async (Linux) pour %s\n",
+                       (LPCTSTR)user->GetAccount() );
+         std::fflush( stderr );
+      }
+      else
+      {
+         TFCPacket busy;
+         busy << (RQ_SIZE)RQ_FromPreInGameToInGame;
+         busy << (char)7;
+         user->self->SendPlayerMessage( busy );
+         std::fprintf( stderr,
+                       "[FromPreInGameToInGame] UsePicklock refuse (sync) pour %s\n",
+                       (LPCTSTR)user->GetAccount() );
+         std::fflush( stderr );
+      }
    }
    else
    {
@@ -6442,6 +6452,8 @@ void TFCMessagesHandler::RQFUNC_PutPlayerInGame(PACKET_FUNC_PROTOTYPE)
 {
    RQ_HEADER;
 
+   RefreshAuthMenuRegistration( user );
+
 #ifndef _WIN32
    std::fprintf( stderr,
                  "[PutPlayerInGame] recu compte='%s' registred=%d in_game=%d preInGame=%d\n",
@@ -6515,7 +6527,9 @@ void TFCMessagesHandler::RQFUNC_PutPlayerInGame(PACKET_FUNC_PROTOTYPE)
             AsyncFuncQueue::GetMainQueue()->Call( AsyncRQFUNC_PutPlayerInGame, lpParams );
 
 #ifndef _WIN32
-            user->UseUnlock( __FILE__, __LINE__ );
+            /* Ne pas UseUnlock ici : le picklock reste pris (comme Windows) jusqu'a
+             * AsyncRQFUNC_PutPlayerInGame / AutoExit — evite erreur 7 si l'async demarre
+             * avant le unlock ou si un second 13 arrive pendant le load. */
             std::fprintf( stderr, "[PutPlayerInGame] charge async « %s » compte %s\n",
                           (LPCTSTR)name, (LPCTSTR)user->GetAccount() );
 #endif
@@ -6751,6 +6765,17 @@ void TFCMessagesHandler::RQFUNC_DeletePlayer(PACKET_FUNC_PROTOTYPE)
 {
    RQ_HEADER;
 
+#ifndef _WIN32
+   std::fprintf( stderr,
+                 "[DELETE] RQ_DeletePlayer recu compte='%s' registred=%d in_game=%d\n",
+                 (LPCTSTR)user->GetAccount(),
+                 user->registred ? 1 : 0,
+                 user->in_game ? 1 : 0 );
+   std::fflush( stderr );
+#endif
+
+   RefreshAuthMenuRegistration( user );
+
    TFCPacket sending;
 
    if( user->UsePicklock(__FILE__, __LINE__) )
@@ -6816,7 +6841,33 @@ void TFCMessagesHandler::RQFUNC_DeletePlayer(PACKET_FUNC_PROTOTYPE)
       }
       else
       {
+#ifndef _WIN32
+         std::fprintf( stderr,
+                       "[DELETE] refuse — registred=%d in_game=%d compte='%s'\n",
+                       user->registred ? 1 : 0,
+                       user->in_game ? 1 : 0,
+                       (LPCTSTR)user->GetAccount() );
+         std::fflush( stderr );
+#endif
+         sending << (RQ_SIZE)RQ_DeletePlayer;
+         sending << (char)5;
+         user->self->SendPlayerMessage( sending );
          user->UseUnlock(__FILE__, __LINE__);
+      }
+   }
+   else
+   {
+#ifndef _WIN32
+      std::fprintf( stderr,
+                    "[DELETE] picklock occupe compte='%s'\n",
+                    (LPCTSTR)user->GetAccount() );
+      std::fflush( stderr );
+#endif
+      if( user->self != NULL )
+      {
+         sending << (RQ_SIZE)RQ_DeletePlayer;
+         sending << (char)6;
+         user->self->SendPlayerMessage( sending );
       }
    }
 
@@ -7366,6 +7417,17 @@ void TFCMessagesHandler::RQFUNC_CreatePlayer(PACKET_FUNC_PROTOTYPE)
 {
    RQ_HEADER;
 
+#ifndef _WIN32
+   std::fprintf( stderr,
+                 "[CREATE] RQ_CreatePlayer recu compte='%s' registred=%d in_game=%d\n",
+                 (LPCTSTR)user->GetAccount(),
+                 user->registred ? 1 : 0,
+                 user->in_game ? 1 : 0 );
+   std::fflush( stderr );
+#endif
+
+   RefreshAuthMenuRegistration( user );
+
    if( user->UsePicklock(__FILE__, __LINE__) )
    {
       if(user->registred && !user->in_game)
@@ -7427,7 +7489,35 @@ void TFCMessagesHandler::RQFUNC_CreatePlayer(PACKET_FUNC_PROTOTYPE)
       }
       else
       {
+#ifndef _WIN32
+         std::fprintf( stderr,
+                       "[CREATE] refuse — registred=%d in_game=%d compte='%s'\n",
+                       user->registred ? 1 : 0,
+                       user->in_game ? 1 : 0,
+                       (LPCTSTR)user->GetAccount() );
+         std::fflush( stderr );
+#endif
+         TFCPacket sending;
+         sending << (RQ_SIZE)RQ_CreatePlayer;
+         sending << (char)5;
+         user->self->SendPlayerMessage( sending );
          user->UseUnlock(__FILE__, __LINE__);
+      }
+   }
+   else
+   {
+#ifndef _WIN32
+      std::fprintf( stderr,
+                    "[CREATE] picklock occupe compte='%s'\n",
+                    (LPCTSTR)user->GetAccount() );
+      std::fflush( stderr );
+#endif
+      if( user->self != NULL )
+      {
+         TFCPacket sending;
+         sending << (RQ_SIZE)RQ_CreatePlayer;
+         sending << (char)6;
+         user->self->SendPlayerMessage( sending );
       }
    }
    RQ_FOOTER( "RQ_CreatePlayer" );
