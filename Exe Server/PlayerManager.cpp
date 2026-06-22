@@ -1469,6 +1469,34 @@ void CPlayerManager::DeletePlayer(Players *lpPlayer,BOOL boIdle)
       lpPlayer->self
       LOG_
 
+   /* Point de passage UNIQUE de toutes les deconnexions (ExitGame, purge
+      reconnexion, idle, timeout, perte de connexion, CommCenter). On sauvegarde
+      ICI, tot, tant que la position/XP en memoire sont encore les vraies (avant
+      tout teardown/reset_character du thread de suppression).
+      bFORCE=TRUE : on ne depend pas de boCanSave (comme la save login qui, elle,
+      fonctionne). boCallback=FALSE : fire-and-forget vers le thread ODBC, aucun
+      blocage du thread appelant, donc pas de deadlock ni d'impact reconnexion.
+      On ne sauve qu'un perso reellement entre en jeu (in_game encore actif, ou
+      boCanSave pose a l'opcode 46 et conserve apres un ExitGame). */
+   if( lpPlayer->self != NULL && ( lpPlayer->in_game || lpPlayer->boCanSave ) )
+   {
+      const BOOL boSaved = lpPlayer->self->SaveCharacter( TRUE, "DeletePlayer", FALSE );
+#ifndef _WIN32
+      std::fprintf( stderr,
+                    "[AUTH] DeletePlayer save compte='%s' perso='%s' ret=%d UserID=%u pos %u,%u w=%u in_game=%d canSave=%d\n",
+                    (LPCTSTR)lpPlayer->GetAccount(),
+                    (LPCTSTR)lpPlayer->self->GetTrueName(),
+                    boSaved ? 1 : 0,
+                    lpPlayer->self->GetID(),
+                    lpPlayer->self->GetWL().X,
+                    lpPlayer->self->GetWL().Y,
+                    lpPlayer->self->GetWL().world,
+                    lpPlayer->in_game ? 1 : 0,
+                    lpPlayer->boCanSave ? 1 : 0 );
+      std::fflush( stderr );
+#endif
+   }
+
    // If logoffs have not been stopped.
    PostQueuedCompletionStatus( hDeletionIo, 0, reinterpret_cast< std::uintptr_t >( lpPlayer ), NULL );    
 }
@@ -1522,6 +1550,7 @@ UINT CPlayerManager::AsyncDeletePlayer( LPVOID lpNull) // NULL
          if( !lpPlayer->in_game && !lpPlayer->registred && !lpPlayer->boPreInGame
              && !lpPlayer->boRerolling && lpPlayer->GetKeyCode() == 0 )
          {
+            /* Sauvegarde deja effectuee tot dans DeletePlayer (point unique). */
             lpPlayer->self->SetPlayer( NULL );
             lpPlayer->self->reset_character();
             delete lpPlayer;

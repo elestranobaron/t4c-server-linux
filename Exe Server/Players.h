@@ -468,6 +468,9 @@ public:
    BOOL in_game;
    BOOL in_AskReloadPlayer;
    BOOL boCanSave;
+   /* ExitGame en jeu : demande la sauvegarde dans AsyncDeletePlayer
+      (les flags in_game/boPreInGame sont effaces avant le thread de suppression). */
+   BOOL boSaveOnDelete;
    BOOL boPreInGame;	  
    BOOL registred;
    BOOL boRerolling;

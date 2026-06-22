@@ -6946,6 +6946,12 @@ static void AcceptVoluntaryExitGame( Players *user )
    sending << (char)1;
    user->self->SendPlayerMessage( sending );
 
+   /* Demande la sauvegarde au thread de suppression (AsyncDeletePlayer) AVANT
+      d'effacer les flags : aucun appel save / WaitForSaving ici, donc le thread
+      UDP n'est jamais bloque (pas de regression connexion/reconnexion). */
+   if( wasInGame )
+      user->boSaveOnDelete = TRUE;
+
    /* Liberation BDD immediate — sinon reconnexion « compte deja utilise » (ref Linux Final Step). */
    Players::DeleteOnlineUserSync( user->GetAccount() );
 

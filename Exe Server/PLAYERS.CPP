@@ -100,6 +100,7 @@ Players::Players()
     god_modeModo = FALSE;
     boPreInGame = FALSE;
 	boCanSave   = FALSE;
+    boSaveOnDelete = FALSE;
     // Mestoph (31/04/2009) Anti SpeedHack
     iCountMovement = 0;
     iSpeedHackTime = time(NULL);
