@@ -1656,7 +1656,7 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                   attackExhaust,
                   GetCrime(),
                   GetHonor(),
-                  GetCompagnonName(),
+                  (LPCTSTR)GetCompagnonName(),
                   GetCompagnonID(),
                   GetRP_XP(),
                   0,
