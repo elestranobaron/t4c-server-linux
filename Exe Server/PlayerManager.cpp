@@ -1478,9 +1478,11 @@ void CPlayerManager::DeletePlayer(Players *lpPlayer,BOOL boIdle)
       blocage du thread appelant, donc pas de deadlock ni d'impact reconnexion.
       On ne sauve qu'un perso reellement entre en jeu (in_game encore actif, ou
       boCanSave pose a l'opcode 46 et conserve apres un ExitGame). */
-   if( lpPlayer->self != NULL && ( lpPlayer->in_game || lpPlayer->boCanSave ) )
+   if( lpPlayer->self != NULL && !lpPlayer->boSaveOnDelete
+       && ( lpPlayer->in_game || lpPlayer->boCanSave ) )
    {
-      const BOOL boSaved = lpPlayer->self->SaveCharacter( TRUE, "DeletePlayer", FALSE );
+      const BOOL boSaved = lpPlayer->self->SaveCharacter( TRUE, "DeletePlayer", TRUE );
+      lpPlayer->boSaveOnDelete = TRUE;
 #ifndef _WIN32
       std::fprintf( stderr,
                     "[AUTH] DeletePlayer save compte='%s' perso='%s' ret=%d UserID=%u pos %u,%u w=%u in_game=%d canSave=%d\n",

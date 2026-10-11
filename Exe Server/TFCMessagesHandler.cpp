@@ -7045,6 +7045,15 @@ void TFCMessagesHandler::RQFUNC_ExitGame(PACKET_FUNC_PROTOTYPE)
    if( user == NULL || user->IsDeleteFlags() )
       return;
 
+   /* Quitter (sauf fermeture brutale) : position, vie, mana, or, XP, sac.
+      Attendre la fin de l'ecriture avant le decompte anti-deconnexion. */
+   if( user->in_game && user->self != NULL && !user->boSaveOnDelete )
+   {
+      user->self->SaveCharacter( TRUE, "RQ_ExitGame", TRUE );
+      user->self->WaitForSaving();
+      user->boSaveOnDelete = TRUE;
+   }
+
    if( !user->in_game && !user->boPreInGame && !user->registred && user->GetKeyCode() == 0 )
    {
 #ifndef _WIN32
