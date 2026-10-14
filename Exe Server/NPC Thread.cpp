@@ -468,7 +468,13 @@ void NPCMain::NPCThreadFunc( void )
                      if(ThisCreature->GetExhaust().attack < Round)
                      {					
                         Unit *Target = ThisCreature->GetTarget();
-                        WorldPos CreatureWL =  ThisCreature->GetWL();												
+                        WorldPos CreatureWL =  ThisCreature->GetWL();
+                        if( Target == NULL || Target->IsDead() )
+                        {
+                           ThisCreature->SetTarget( ThisCreature->GetBond() );
+                           ThisCreature->Do( wandering, "NPCThreadFuncNoTarget" );
+                           break;
+                        }
                         if(Target)
                         {
                            // If the creature's target is a player.

@@ -15185,6 +15185,12 @@ void Character::StartAsyncDirectTalk(CString strMessage,BYTE chDir, DWORD dwColo
                                 (const char *)lpMessageSent );
                   std::fflush( stderr );
 #endif
+                  /* Un PNJ reste en combat apres un monstre proche : OnTalk ignore alors le clic. */
+                  if( target->GetType() == U_NPC && target->GetStatus() == CAN_TALK &&
+                      target->IsDoing() == fighting )
+                  {
+                     target->Do( wandering );
+                  }
                   target->SendUnitMessage(MSG_OnTalk, target, NULL, this, static_cast< void * >( const_cast< BYTE * >( lpMessageSent ) ), NULL);
 
                   target->Unlock();
@@ -15333,6 +15339,11 @@ void Character::StartAsyncDirectTalkNoFeed(CString strMessage,BYTE chDir, DWORD 
                                 (const char *)lpMessageSent );
                   std::fflush( stderr );
 #endif
+                  if( target->GetType() == U_NPC && target->GetStatus() == CAN_TALK &&
+                      target->IsDoing() == fighting )
+                  {
+                     target->Do( wandering );
+                  }
                   target->SendUnitMessage(MSG_OnTalk, target, NULL, this, static_cast< void * >( const_cast< BYTE * >( lpMessageSent ) ), NULL);
 
                   target->Unlock();
