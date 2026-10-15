@@ -1132,7 +1132,7 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
             dwUserID,					
             lpszName,
             obj->GetQty(),
-            obj->GetCreatedBy()
+            (LPCTSTR)obj->GetCreatedBy()
             );
 
          ADD_QUERY
@@ -1208,7 +1208,7 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                   dwUserID,					
                   lpszName,
                   obj->GetQty(),
-                  obj->GetCreatedBy()
+                  (LPCTSTR)obj->GetCreatedBy()
                   );
 
                ADD_QUERY
@@ -1297,7 +1297,7 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                         nEquipPos,
                         lpszName,
                         obj->GetQty(),
-                        obj->GetCreatedBy()
+                        (LPCTSTR)obj->GetCreatedBy()
 
                         );
 
@@ -1367,7 +1367,7 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                   dwUserID,					
                   lpszName,
                   obj->GetQty(),
-                  obj->GetCreatedBy()
+                  (LPCTSTR)obj->GetCreatedBy()
 
                   );
 
