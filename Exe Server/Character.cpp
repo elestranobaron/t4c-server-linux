@@ -513,8 +513,14 @@ void Character::InitializeODBC( void )
    ODBCCharAsyncSave.ConnectOption( SQL_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF );	
    ODBCNMSGold      .ConnectOption( SQL_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF );	
 
+   /* InnoDB reste en REPEATABLE READ : la connexion de lecture garderait
+      la position lue au demarrage jusqu'a l'arret du processus. */
+   ODBCCharRead    .ConnectOption( SQL_TXN_ISOLATION, SQL_TXN_READ_COMMITTED );
+   ODBCCharReadCon .ConnectOption( SQL_TXN_ISOLATION, SQL_TXN_READ_COMMITTED );
+
    // Stop transaction.
    ODBCCharRead.Cancel();
+   ODBCCharRead.Commit();
    ODBCCharRead.Unlock();
 }
 /******************************************************************************/
@@ -558,6 +564,7 @@ void AssignValidID(Character *target) // The character to set a valid ID to.
    target->SetID( previousId + 1 );
 
    ODBCCharRead.Cancel();
+   ODBCCharRead.Commit();
    ODBCCharRead.Unlock();
 }
 
@@ -2775,6 +2782,7 @@ int Character::LoadCharacter(CString csName) // The character name to load.
          // LOAD CHARACTER BOOSTS
          LoadBoosts( ODBCCharRead, GetID());
          ODBCCharRead.Cancel(); //Cancel Previous fetch
+         ODBCCharRead.Commit();
          ODBCCharRead.Unlock();
 
          Players *pl = (Players *)ThisPlayer;
@@ -3094,12 +3102,14 @@ int Character::LoadCharacter(CString csName) // The character name to load.
             LOG_
 
          ODBCCharRead.Cancel();
+         ODBCCharRead.Commit();
          ODBCCharRead.Unlock();
          return 10;
       }
    }
 
    ODBCCharRead.Cancel();
+   ODBCCharRead.Commit();
    ODBCCharRead.Unlock();
    return 6;
 }
