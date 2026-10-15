@@ -451,6 +451,14 @@ BOOL cODBCMage::SendRequest(
                 "Unable to complete ODBC query, accounting will fail. Query = %s",lpszRequest                                                
             LOG_
 
+#ifndef _WIN32
+            std::fprintf(stderr, "[ODBC] echec state=%s native=%ld msg=%s\nquery=%.700s\n",
+                         (const char *)lpbSQLState, (long)dwNativeError, (const char *)lpbErrorMsg,
+                         lpszRequest != NULL ? lpszRequest : "");
+            std::fflush(stderr);
+            SQLFreeStmt(hstmt, SQL_CLOSE);
+#endif
+
             _LOG_DEBUG
                 LOG_DEBUG_LVL3,
                 "SQL ERROR [SQLExecDirect]: Original SQL query statement: [ %s ]\n SQL State: %s\n"

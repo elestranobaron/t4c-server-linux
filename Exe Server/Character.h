@@ -601,6 +601,9 @@ private:
     static void AutoConfigUpdate( void );
 
     BOOL CreateCharacter(CString csName, LPBYTE lpbAnswers );
+    /** Gemme, torche, veste et pantalon de toile. Retourne le nombre d'objets ajoutés. */
+    int GiveStartupItems();
+    void PersistBackpackDirect();
 
     void SynchronizeGold( void );
 

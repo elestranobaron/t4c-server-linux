@@ -1015,9 +1015,86 @@ void Character::DataSaveCallback(
          }
    }
 
+#ifndef _WIN32
+   std::fprintf(stderr, "[SAVE] personnage %s %s\n",
+                (LPCTSTR)self->GetTrueName(),
+                dwSaveStatus == BATCH_SUCCEEDED ? "valide" : "ANNULE");
+   std::fflush(stderr);
+#endif
+
    // Set saving event signaled ( save terminated ).
    self->SavingStop();
 }
+static void SqlLit(char *dst, size_t dstSize, const char *src, size_t maxChars)
+{
+   size_t o = 0;
+   size_t stored = 0;
+   if (dstSize == 0)
+   {
+      return;
+   }
+   if (src == NULL)
+   {
+      dst[0] = 0;
+      return;
+   }
+   while (*src && stored < maxChars)
+   {
+      const unsigned char c = (unsigned char)*src++;
+      if (c < 32)
+      {
+         continue;
+      }
+      const bool esc = (c == '\'' || c == '\\');
+      if (o + (esc ? 2u : 1u) + 1u > dstSize)
+      {
+         break;
+      }
+      if (c == '\'')
+      {
+         dst[o++] = '\'';
+         dst[o++] = '\'';
+      }
+      else if (c == '\\')
+      {
+         dst[o++] = '\\';
+         dst[o++] = '\\';
+      }
+      else
+      {
+         dst[o++] = (char)c;
+      }
+      ++stored;
+   }
+   dst[o] = 0;
+}
+
+static bool SqlItemTexts(char *type, size_t typeN, char *maker, size_t makerN,
+                         const char *rawType, const char *rawMaker)
+{
+   size_t n = 0;
+   if (rawType != NULL)
+   {
+      for (const char *p = rawType; *p; ++p)
+      {
+         if ((unsigned char)*p >= 32)
+         {
+            ++n;
+         }
+      }
+   }
+   if (n == 0 || n > 49)
+   {
+      std::fprintf(stderr, "[SAVE] objet ignore (nom %zu car.): %.80s\n", n,
+                   rawType != NULL ? rawType : "");
+      std::fflush(stderr);
+      return false;
+   }
+   SqlLit(type, typeN, rawType, 49);
+   SqlLit(maker, makerN, rawMaker != NULL ? rawMaker : "", 49);
+   return type[0] != 0;
+}
+
 /******************************************************************************/
 // Saves a character
 BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
@@ -1118,6 +1195,13 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
       // If the item is not gold and if the unit name ID could be found
       if( obj->GetStaticReference() != __OBJ_GOLD && Unit::GetNameFromID( obj->GetStaticReference(), (LPTSTR)(LPCTSTR)lpszName, U_OBJECT ) )
       {
+         char szType[128];
+         char szMaker[128];
+         if (!SqlItemTexts(szType, sizeof(szType), szMaker, sizeof(szMaker),
+                           (const char *)lpszName, (const char *)(LPCTSTR)obj->GetCreatedBy()))
+         {
+            continue;
+         }
          // Insert new object into PlayerItems table
          csQuery.Format( 
             "INSERT INTO PlayerItems( ObjID, OwnerID, EquipPos, ObjType, Qty, MadeBy ) VALUES ( "
@@ -1130,9 +1214,9 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
             " )",
             obj->GetID(),
             dwUserID,					
-            lpszName,
+            szType,
             obj->GetQty(),
-            (LPCTSTR)obj->GetCreatedBy()
+            szMaker
             );
 
          ADD_QUERY
@@ -1194,6 +1278,13 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
             // If the item is not gold and if the unit name ID could be found
             if( obj->GetStaticReference() != __OBJ_GOLD && Unit::GetNameFromID( obj->GetStaticReference(), (LPTSTR)(LPCTSTR)lpszName, U_OBJECT ) )
             {
+               char szType[128];
+               char szMaker[128];
+               if (!SqlItemTexts(szType, sizeof(szType), szMaker, sizeof(szMaker),
+                                 (const char *)lpszName, (const char *)(LPCTSTR)obj->GetCreatedBy()))
+               {
+                  continue;
+               }
                // Insert new object into PlayerItems table
                csQuery.Format( 
                   "INSERT INTO PlayerItems( ObjID, OwnerID, EquipPos, ObjType, Qty, MadeBy ) VALUES ( "
@@ -1206,9 +1297,9 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                   " )",
                   obj->GetID(),
                   dwUserID,					
-                  lpszName,
+                  szType,
                   obj->GetQty(),
-                  (LPCTSTR)obj->GetCreatedBy()
+                  szMaker
                   );
 
                ADD_QUERY
@@ -1282,6 +1373,13 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                   // If unit name ID could be found
                   if( Unit::GetNameFromID( obj->GetStaticReference(), (LPTSTR)(LPCTSTR)lpszName, U_OBJECT ) )
                   {
+                     char szType[128];
+                     char szMaker[128];
+                     if (!SqlItemTexts(szType, sizeof(szType), szMaker, sizeof(szMaker),
+                                       (const char *)lpszName, (const char *)(LPCTSTR)obj->GetCreatedBy()))
+                     {
+                        continue;
+                     }
                      // Insert new object into PlayerItems table
                      csQuery.Format( 
                         "INSERT INTO PlayerItems( ObjID, OwnerID, EquipPos, ObjType, Qty, MadeBy ) VALUES ( "
@@ -1295,9 +1393,9 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                         obj->GetID(),
                         dwUserID,
                         nEquipPos,
-                        lpszName,
+                        szType,
                         obj->GetQty(),
-                        (LPCTSTR)obj->GetCreatedBy()
+                        szMaker
 
                         );
 
@@ -1354,6 +1452,13 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
             // If the unit name ID could be found
             if( Unit::GetNameFromID( obj->GetStaticReference(), (LPTSTR)(LPCTSTR)lpszName, U_OBJECT ) )
             {
+               char szType[128];
+               char szMaker[128];
+               if (!SqlItemTexts(szType, sizeof(szType), szMaker, sizeof(szMaker),
+                                 (const char *)lpszName, (const char *)(LPCTSTR)obj->GetCreatedBy()))
+               {
+                  continue;
+               }
                // Insert new object into PlayerItems table
                csQuery.Format( 
                   "INSERT INTO ChestItems( ObjID, OwnerID, ObjType, Qty, MadeBy ) VALUES ( "
@@ -1365,9 +1470,9 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                   " )",
                   obj->GetID(),
                   dwUserID,					
-                  lpszName,
+                  szType,
                   obj->GetQty(),
-                  (LPCTSTR)obj->GetCreatedBy()
+                  szMaker
 
                   );
 
@@ -1581,6 +1686,15 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                   attackExhaust = ( exhaust.attack - curRound ) * 50;
                }
 
+               char szPlayer[160];
+               char szTitle[520];
+               char szMisc[520];
+               char szComp[120];
+               SqlLit(szPlayer, sizeof(szPlayer), (const char *)(LPCTSTR)GetTrueName(), 63);
+               SqlLit(szTitle, sizeof(szTitle), (const char *)(LPCTSTR)csListingTitle, 250);
+               SqlLit(szMisc, sizeof(szMisc), (const char *)(LPCTSTR)csListingMisc, 250);
+               SqlLit(szComp, sizeof(szComp), (const char *)(LPCTSTR)GetCompagnonName(), 49);
+
                // Build the primary UPDATE query
                csQuery.Format(
                   "UPDATE PlayingCharacters SET "
@@ -1623,7 +1737,7 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                   "RPXpPoint=%d "
                   "WHERE UserID=%u",
 
-                  (LPCTSTR)GetTrueName(),
+                  szPlayer,
                   GetTrueSTR(),
                   GetTrueEND(),
                   GetTrueAGI(),
@@ -1649,14 +1763,14 @@ BOOL Character::SaveCharacter(BOOL bFORCE,char *pstrFromWho, BOOL boCallback )
                   Appearance,
                   nKarma,
                   bGender,
-                  (LPCTSTR)csListingTitle,
-                  (LPCTSTR)csListingMisc,
+                  szTitle,
+                  szMisc,
                   moveExhaust,
                   mentalExhaust,
                   attackExhaust,
                   GetCrime(),
                   GetHonor(),
-                  (LPCTSTR)GetCompagnonName(),
+                  szComp,
                   GetCompagnonID(),
                   GetRP_XP(),
                   0,
@@ -2246,6 +2360,10 @@ int Character::LoadCharacter(CString csName) // The character name to load.
                }
             }
             ODBCCharRead.Cancel(); //Cancel Previous fetch
+            if (GiveStartupItems() > 0)
+            {
+               PersistBackpackDirect();
+            }
          }
 
 
@@ -2987,6 +3105,186 @@ int Character::LoadCharacter(CString csName) // The character name to load.
 }
 /******************************************************************************/
 // Creates a new character, returns FALSE if it could not create a new character
+struct StartupGiven
+{
+   Character *who;
+   Objects *obj;
+};
+static CLock s_givenLock;
+static vector<StartupGiven> s_given;
+
+static void RememberGiven(Character *ch, Objects *obj)
+{
+   StartupGiven row;
+   row.who = ch;
+   row.obj = obj;
+   s_givenLock.Lock();
+   s_given.push_back(row);
+   s_givenLock.Unlock();
+}
+
+static vector<Objects *> TakeGiven(Character *ch)
+{
+   vector<Objects *> out;
+   vector<StartupGiven> keep;
+   s_givenLock.Lock();
+   for (vector<StartupGiven>::iterator it = s_given.begin(); it != s_given.end(); ++it)
+   {
+      if (it->who == ch)
+      {
+         out.push_back(it->obj);
+      }
+      else
+      {
+         keep.push_back(*it);
+      }
+   }
+   s_given.swap(keep);
+   s_givenLock.Unlock();
+   return out;
+}
+
+static bool BackpackContainsStatic(Character *ch, WORD id)
+{
+   TemplateList<Unit> *bp = ch->GetBackpack();
+   if (bp == NULL || id == 0)
+   {
+      return false;
+   }
+   bool found = false;
+   bp->Lock();
+   bp->ToHead();
+   while (bp->QueryNext())
+   {
+      Objects *obj = static_cast<Objects *>(bp->Object());
+      if (obj != NULL && obj->GetStaticReference() == id)
+      {
+         found = true;
+         break;
+      }
+   }
+   bp->Unlock();
+   return found;
+}
+
+static void GiveStartupObject(Character *ch, WORD id, int *added)
+{
+   if (id == 0 || BackpackContainsStatic(ch, id))
+   {
+      return;
+   }
+   Objects *obj = new Objects;
+   if (obj->Create(U_OBJECT, id))
+   {
+      if (obj->GetQty() == 0)
+      {
+         obj->SetQty(1);
+      }
+      ch->AddToBackpack(obj);
+      RememberGiven(ch, obj);
+      if (added != NULL)
+      {
+         ++(*added);
+      }
+   }
+   else
+   {
+      obj->DeleteUnit();
+   }
+}
+
+int Character::GiveStartupItems()
+{
+   int added = 0;
+   GiveStartupObject(this, __OBJ_GEM_OF_DESTINY, &added);
+   if (theApp.m_dwMinionGemID > 0)
+   {
+      GiveStartupObject(this, (WORD)theApp.m_dwMinionGemID, &added);
+   }
+
+   vStartupItems.Lock();
+   for (vector<string>::iterator k = vStartupItems.begin(); k != vStartupItems.end(); ++k)
+   {
+      const WORD wObjID = Unit::GetIDFromName((*k).c_str(), U_OBJECT, TRUE);
+      if (wObjID == 0)
+      {
+         std::fprintf(stderr, "[BOOT] StartupItem '%s' introuvable\n", (*k).c_str());
+      }
+      GiveStartupObject(this, wObjID, &added);
+   }
+   vStartupItems.Unlock();
+   if (added > 0)
+   {
+      std::fprintf(stderr, "[BOOT] stuff de depart +%d objet(s) pour %s\n", added,
+                   (LPCTSTR)GetTrueName());
+      std::fflush(stderr);
+   }
+   return added;
+}
+
+void Character::PersistBackpackDirect()
+{
+   vector<Objects *> fresh = TakeGiven(this);
+   if (fresh.empty())
+   {
+      return;
+   }
+   ODBCCharWrite.Lock();
+   bool ok = true;
+   for (vector<Objects *>::iterator it = fresh.begin(); it != fresh.end() && ok; ++it)
+   {
+      Objects *obj = *it;
+      if (obj == NULL || obj->GetStaticReference() == __OBJ_GOLD)
+      {
+         continue;
+      }
+      BYTE lpszName[256];
+      memset(lpszName, 0, sizeof(lpszName));
+      if (!Unit::GetNameFromID((WORD)obj->GetStaticReference(), (LPTSTR)lpszName, U_OBJECT))
+      {
+         std::fprintf(stderr, "[SAVE] stuff id %u sans nom, ignore\n",
+                      (unsigned)obj->GetStaticReference());
+         continue;
+      }
+      char szType[128];
+      char szMaker[128];
+      if (!SqlItemTexts(szType, sizeof(szType), szMaker, sizeof(szMaker),
+                        (const char *)lpszName, (const char *)(LPCTSTR)obj->GetCreatedBy()))
+      {
+         continue;
+      }
+      CString csQuery;
+      const UINT qty = obj->GetQty() == 0 ? 1 : obj->GetQty();
+      csQuery.Format(
+         "INSERT INTO PlayerItems( ObjID, OwnerID, EquipPos, ObjType, Qty, MadeBy ) VALUES ( "
+         "%u, %u, 0, '%s', %u, '%s' )",
+         obj->GetID(),
+         GetID(),
+         szType,
+         qty,
+         szMaker);
+      if (!ODBCCharWrite.SendRequest((LPCTSTR)csQuery))
+      {
+         ok = false;
+      }
+   }
+   if (ok)
+   {
+      ODBCCharWrite.Commit();
+      std::fprintf(stderr, "[SAVE] stuff de depart ecrit (%u) pour %s\n",
+                   (unsigned)fresh.size(), (const char *)(LPCTSTR)GetTrueName());
+   }
+   else
+   {
+      ODBCCharWrite.Rollback();
+      std::fprintf(stderr, "[SAVE] stuff de depart ANNULE pour %s\n",
+                   (const char *)(LPCTSTR)GetTrueName());
+   }
+   std::fflush(stderr);
+   ODBCCharWrite.Cancel();
+   ODBCCharWrite.Unlock();
+}
+
 BOOL Character::CreateCharacter(CString csName, LPBYTE lpbAnswers )
 /******************************************************************************/
 {
@@ -3045,44 +3343,7 @@ BOOL Character::CreateCharacter(CString csName, LPBYTE lpbAnswers )
    nKarma = nCrime = nHonor = dwLastHealing = 0;
 
    
-   Objects *objNewObject = new Objects; // Create a gem of destiny, its a *must*
-   if( objNewObject->Create( U_OBJECT, __OBJ_GEM_OF_DESTINY ) )
-      backpack->AddToTail( objNewObject );
-   else
-      objNewObject->DeleteUnit();
-
-   if(theApp.m_dwMinionGemID >0) //Creage Minion gem si elle existe en settings...
-   {
-      Objects *objGemObject = new Objects;
-      if( objGemObject->Create( U_OBJECT, theApp.m_dwMinionGemID ) )
-         backpack->AddToTail( objGemObject );
-      else
-         objGemObject->DeleteUnit();
-   }
-
-   // Create all startup items on player.
-   WORD wObjID;            
-   vector< string >::iterator k;
-   vStartupItems.Lock();
-   for( k = vStartupItems.begin(); k != vStartupItems.end(); k++ )
-   {
-      // If the object's numerical ID could be found.
-      wObjID = Unit::GetIDFromName( (*k).c_str(), U_OBJECT, TRUE );
-      if( wObjID != 0 )
-      {
-         objNewObject = new Objects;
-         // Create this object.
-         if( objNewObject->Create( U_OBJECT, wObjID ) )
-         {
-            backpack->AddToTail( objNewObject );
-         }
-         else
-         {
-            objNewObject->DeleteUnit();
-         }
-      }
-   }
-   vStartupItems.Unlock();
+   GiveStartupItems();
 
    WORD wSkillPntsBackup = wNbSkillPnts;
    CString errMsg;
@@ -3355,6 +3616,14 @@ BOOL Character::CreateCharacter(CString csName, LPBYTE lpbAnswers )
    }
    ODBCCharWrite.Cancel();
    ODBCCharWrite.Unlock();
+   if (bOK)
+   {
+      PersistBackpackDirect();
+   }
+   else
+   {
+      TakeGiven(this);
+   }
    return bOK;
 }
 /******************************************************************************/

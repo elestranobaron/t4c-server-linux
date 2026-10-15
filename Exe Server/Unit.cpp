@@ -2834,7 +2834,11 @@ BOOL Unit::SaveEffects(TemplateList< SQL_REQUEST > *lptlSQLRequests,DWORD dwBase
                                dwBaseOwnerID,
                                lpEffect->dwEffect,
                                lpEffect->bEffectType,
-                               ( lpEffect->dwTimer - TFCMAIN::GetRound() ),
+                               ( lpEffect->dwTimer > TFCMAIN::GetRound()
+                                    ? (int)( (lpEffect->dwTimer - TFCMAIN::GetRound()) > 2000000000UL
+                                             ? 2000000000UL
+                                             : (lpEffect->dwTimer - TFCMAIN::GetRound()) )
+                                    : 0 ),
                                lpbTextData,
                                lpEffect->dwTotalDuration,
                                lpEffect->bindedSpellID,
@@ -3144,6 +3148,29 @@ BOOL Unit::SaveBoosts
 		while( lptlBoostList->QueryNext() && !boDBError ){
 			lpBoost = lptlBoostList->Object();
 
+			char szBoost[512];
+			szBoost[0] = 0;
+			{
+				const char *raw = lpBoost->bfBoost.GetOriginalFormula();
+				size_t o = 0;
+				if (raw != NULL)
+				{
+					for (const char *p = raw; *p && o + 3 < sizeof(szBoost); ++p)
+					{
+						const unsigned char c = (unsigned char)*p;
+						if (c < 32)
+						{
+							continue;
+						}
+						if (c == '\'' || c == '\\')
+						{
+							szBoost[o++] = (c == '\'') ? '\'' : '\\';
+						}
+						szBoost[o++] = (char)c;
+					}
+				}
+				szBoost[o] = 0;
+			}
 			csQuery.Format(
 				"INSERT INTO Boosts(OwnerID,BaseOwnerID,BoostID,Stat,Boost) VALUES ( "
 				"%d,"	  // OwnerID
@@ -3156,7 +3183,7 @@ BOOL Unit::SaveBoosts
             dwBaseOwnerID,
 				lpBoost->dwBoostID,
 				lpBoost->wStat,
-				lpBoost->bfBoost.GetOriginalFormula()
+				szBoost
 			);
 
 			ADD_QUERY
