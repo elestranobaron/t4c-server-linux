@@ -7999,7 +7999,7 @@ void TFCMessagesHandler::RQFUNC_SendBuyItemList( PACKET_FUNC_PROTOTYPE )
 
       GET_WORD( wlPos.X );
       GET_WORD( wlPos.Y );
-      GET_LONG( dwID );
+      GET_PACKET_U32( msg, dwID );
 
       // Find the unit
       lpShopUnit = wl->FindNearUnit( wlPos, dwID );
@@ -8057,7 +8057,7 @@ void TFCMessagesHandler::RQFUNC_SendPointsItemList( PACKET_FUNC_PROTOTYPE )
 
       GET_WORD( wlPos.X );
       GET_WORD( wlPos.Y );
-      GET_LONG( dwID );
+      GET_PACKET_U32( msg, dwID );
 
       // Find the unit
       lpShopUnit = wl->FindNearUnit( wlPos, dwID );
@@ -8109,7 +8109,7 @@ void TFCMessagesHandler::RQFUNC_SendSellItemList( PACKET_FUNC_PROTOTYPE )
       npcShopData.Action = __SELL;
       GET_WORD( wlPos.X );	// NPC pos
       GET_WORD( wlPos.Y );
-      GET_LONG( dwID );		// NPC ID
+      GET_PACKET_U32( msg, dwID );
       GET_WORD( shQty );	// Qty
       // Find the unit
       lpShopUnit = wl->FindNearUnit( wlPos, dwID );
@@ -8119,11 +8119,24 @@ void TFCMessagesHandler::RQFUNC_SendSellItemList( PACKET_FUNC_PROTOTYPE )
          // Fetch shop datas until packet ends.
          for(int i=0;i<shQty;i++)
          {
-            GET_LONG( npcShopData.ID );	// ID of the backpack item to sell.
-            GET_LONG( npcShopData.wQuantity );
+            /* Get(long*) ecrit 8 octets : sur wQuantity (WORD) ca mettait l'ID a 0. */
+            std::uint32_t itemId = 0;
+            std::uint32_t qty = 0;
+            msg->Get( &itemId );
+            msg->Get( &qty );
+            npcShopData.ID = itemId;
+            npcShopData.wQuantity = static_cast<WORD>( qty );
 
             lpShopUnit->SendUnitMessage(MSG_OnNPCDataExchange, lpShopUnit, NULL, user->self, &npcData, NULL );
          }
+
+         TFCPacket sending;
+         sending << (RQ_SIZE)RQ_ViewBackpack2;
+         sending << (char)0;
+         sending << (long)user->self->GetID();
+         user->self->PacketBackpack( sending );
+         user->self->SendPlayerMessage( sending );
+         user->self->SetGold( user->self->GetGold() );
 
          user->self->Unlock();
          lpShopUnit->Unlock();
