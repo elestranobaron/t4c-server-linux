@@ -3177,18 +3177,18 @@ static bool BackpackContainsStatic(Character *ch, WORD id)
    return found;
 }
 
-static void GiveStartupObject(Character *ch, WORD id, int *added)
+static void GiveStartupObject(Character *ch, WORD id, int *added, unsigned qty)
 {
-   if (id == 0 || BackpackContainsStatic(ch, id))
+   if (id == 0 || qty == 0 || BackpackContainsStatic(ch, id))
    {
       return;
    }
    Objects *obj = new Objects;
    if (obj->Create(U_OBJECT, id))
    {
-      if (obj->GetQty() == 0)
+      if (obj->GetQty() < qty)
       {
-         obj->SetQty(1);
+         obj->SetQty(qty);
       }
       ch->AddToBackpack(obj);
       RememberGiven(ch, obj);
@@ -3206,23 +3206,46 @@ static void GiveStartupObject(Character *ch, WORD id, int *added)
 int Character::GiveStartupItems()
 {
    int added = 0;
-   GiveStartupObject(this, __OBJ_GEM_OF_DESTINY, &added);
+   GiveStartupObject(this, __OBJ_GEM_OF_DESTINY, &added, 1);
    if (theApp.m_dwMinionGemID > 0)
    {
-      GiveStartupObject(this, (WORD)theApp.m_dwMinionGemID, &added);
+      GiveStartupObject(this, (WORD)theApp.m_dwMinionGemID, &added, 1);
    }
 
+   vector<string> names;
    vStartupItems.Lock();
-   for (vector<string>::iterator k = vStartupItems.begin(); k != vStartupItems.end(); ++k)
+   names = vStartupItems;
+   vStartupItems.Unlock();
+
+   vector<WORD> ids;
+   vector<unsigned> qtys;
+   for (vector<string>::iterator k = names.begin(); k != names.end(); ++k)
    {
       const WORD wObjID = Unit::GetIDFromName((*k).c_str(), U_OBJECT, TRUE);
       if (wObjID == 0)
       {
          std::fprintf(stderr, "[BOOT] StartupItem '%s' introuvable\n", (*k).c_str());
+         continue;
       }
-      GiveStartupObject(this, wObjID, &added);
+      size_t slot = 0;
+      for (; slot < ids.size(); ++slot)
+      {
+         if (ids[slot] == wObjID)
+         {
+            qtys[slot] += 1;
+            break;
+         }
+      }
+      if (slot == ids.size())
+      {
+         ids.push_back(wObjID);
+         qtys.push_back(1);
+      }
    }
-   vStartupItems.Unlock();
+   for (size_t slot = 0; slot < ids.size(); ++slot)
+   {
+      GiveStartupObject(this, ids[slot], &added, qtys[slot]);
+   }
    if (added > 0)
    {
       std::fprintf(stderr, "[BOOT] stuff de depart +%d objet(s) pour %s\n", added,
