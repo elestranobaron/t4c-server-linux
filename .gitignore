@@ -17,6 +17,9 @@ svr.id
 *.odbc.ini
 docker/runtime/
 
+# Notes d'audit. Elles sont sur la branche audit de Forgejo.
+AUDIT-S*.md
+
 # --- Sorties d'exécution ---
 Logs/
 logs/
