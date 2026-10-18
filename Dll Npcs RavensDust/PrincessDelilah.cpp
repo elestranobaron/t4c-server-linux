@@ -21,9 +21,9 @@ void PrincessDelilah::Create( void )
 {
 	npc = PrincessDelilahNPC;
 	SET_NPC_NAME( "[2975]Princess Delilah" );
-	npc.InitialPos.X = 2830;//1420; 
-	npc.InitialPos.Y = 671;//2320; 
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1420;//1420; 
+	npc.InitialPos.Y = 2320;//2320; 
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void PrincessDelilah::OnTalk( UNIT_FUNC_PROTOTYPE )

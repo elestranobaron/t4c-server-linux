@@ -21,8 +21,8 @@ void Zhakar::Create( void )
 {
 	npc = ( ZhakarNPC );
 	SET_NPC_NAME( "[2993]Zhakar" );
-	npc.InitialPos.X = 0;
-	npc.InitialPos.Y = 0;
+	npc.InitialPos.X = 55;
+	npc.InitialPos.Y = 1769;
 	npc.InitialPos.world = 0;
 }
 /******************************************************************************/

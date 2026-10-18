@@ -21,8 +21,8 @@ void DwarthonStoneface::Create( void )
 {
 	npc = ( DwarthonStonefaceNPC );
 	SET_NPC_NAME( "[2945]Dwarthon Stoneface" );
-	npc.InitialPos.X = 0;
-	npc.InitialPos.Y = 0;
+	npc.InitialPos.X = 303;
+	npc.InitialPos.Y = 1678;
 	npc.InitialPos.world = 0;
 }
 /******************************************************************************/

@@ -21,9 +21,9 @@ void Terwin::Create( )
 {
 	npc = Guard_set_two;
 	SET_NPC_NAME( "[2986]Terwin" );
-	npc.InitialPos.X = 2845;//1379;
-	npc.InitialPos.Y = 460;//2354;
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1379;//1379;
+	npc.InitialPos.Y = 2354;//2354;
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void Terwin::OnTalk( UNIT_FUNC_PROTOTYPE )

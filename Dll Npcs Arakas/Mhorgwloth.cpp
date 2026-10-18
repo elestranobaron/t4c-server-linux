@@ -21,8 +21,8 @@ void Mhorgwloth::Create( void )
 {
 	npc = _Mhorgwloth;
 	SET_NPC_NAME( "[2903]Mhorgwloth the troll" );
-	npc.InitialPos.X = 0;
-	npc.InitialPos.Y = 0;
+	npc.InitialPos.X = 1566;
+	npc.InitialPos.Y = 174;
 	npc.InitialPos.world = 0;
 }
 /******************************************************************************/

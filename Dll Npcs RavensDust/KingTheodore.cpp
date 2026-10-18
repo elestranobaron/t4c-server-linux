@@ -21,9 +21,9 @@ void KingTheodore::Create( void )
 {
 	npc = ( KingTheodoreNPC );
 	SET_NPC_NAME( "[2963]King Theodore XIII" );
-	npc.InitialPos.X = 2848;//1405;   
-	npc.InitialPos.Y = 648;//2300;
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1405;//1405;   
+	npc.InitialPos.Y = 2300;//2300;
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void KingTheodore::OnAttacked( UNIT_FUNC_PROTOTYPE )

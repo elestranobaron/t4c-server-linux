@@ -21,9 +21,9 @@ void Safe::Create( void )
 {
 	npc = ( SafeNPC );
 	SET_NPC_NAME( "[2979]A safe" );  
-	npc.InitialPos.X = 2797;//1372; 
-	npc.InitialPos.Y = 222;//2323;
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1372;//1372; 
+	npc.InitialPos.Y = 2323;//2323;
+	npc.InitialPos.world = 0;//0;
 	npc.boPrivateTalk = TRUE;
 }
 /******************************************************************************/

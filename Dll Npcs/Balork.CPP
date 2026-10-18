@@ -13,8 +13,8 @@ void _Balork::Create( void )
 {
         npc = ( Balork );
         SET_NPC_NAME( "[3030]Balork" );
-        npc.InitialPos.X = 0;
-        npc.InitialPos.Y = 0;
+        npc.InitialPos.X = 235;
+        npc.InitialPos.Y = 452;
         npc.InitialPos.world = 1;
 }
 

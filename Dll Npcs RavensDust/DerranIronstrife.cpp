@@ -21,9 +21,9 @@ void DerranIronstrife::Create( void )
 {
 	npc = ( Normal_Guard );
 	SET_NPC_NAME( "[2942]Derran Ironstrife" );
-	npc.InitialPos.X = 2902;//1368; 
-	npc.InitialPos.Y = 255;//2413;
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1368;//1368; 
+	npc.InitialPos.Y = 2413;//2413;
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void DerranIronstrife::OnTalk( UNIT_FUNC_PROTOTYPE )

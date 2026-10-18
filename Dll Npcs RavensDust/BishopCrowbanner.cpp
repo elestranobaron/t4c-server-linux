@@ -21,9 +21,9 @@ void BishopCrowbanner::Create( void )
 {
     npc = ChamberlainThomarNPC;
     SET_NPC_NAME( "[2919]Bishop Crowbanner");
-    npc.InitialPos.X = 2844;//1415; // Somewhere in Silversky castle
-    npc.InitialPos.Y = 691;//2334; // Somewhere in Silversky castle
-	npc.InitialPos.world = 4;//0;
+    npc.InitialPos.X = 1415;//1415; // Somewhere in Silversky castle
+    npc.InitialPos.Y = 2334;//2334; // Somewhere in Silversky castle
+	npc.InitialPos.world = 0;//0;
 
     GiveGlobalFlag(__QUEST_BISHOP_ILLNESS, rnd.roll(dice(1,2))-1);
 	GiveGlobalFlag(__GLOBAL_QUEST_CROWBANNER_TIMER, rnd.roll(dice(1,6))*4 HOURS TDELAY);

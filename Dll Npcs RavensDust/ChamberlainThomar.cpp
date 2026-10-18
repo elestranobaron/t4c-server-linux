@@ -21,9 +21,9 @@ void ChamberlainThomar::Create( void )
 {
 	npc = ChamberlainThomarNPC;
     SET_NPC_NAME( "[2937]Chamberlain Thomar" );
-    npc.InitialPos.X = 2833;//1417; // Castle in Silversky
-    npc.InitialPos.Y = 227;//2340; // Castle in Silversky
-	npc.InitialPos.world = 4;//0;
+    npc.InitialPos.X = 1417;//1417; // Castle in Silversky
+    npc.InitialPos.Y = 2340;//2340; // Castle in Silversky
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void ChamberlainThomar::OnTalk( UNIT_FUNC_PROTOTYPE )

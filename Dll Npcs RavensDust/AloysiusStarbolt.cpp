@@ -21,9 +21,9 @@ void AloysiusStarbolt::Create( void )
 {
 	npc = ( Mage );
 	SET_NPC_NAME( "[2913]Aloysius Starbolt" );  
-	npc.InitialPos.X = 2949;//1342; 
-	npc.InitialPos.Y = 212;//2380;
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1342;//1342; 
+	npc.InitialPos.Y = 2380;//2380;
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void AloysiusStarbolt::OnTalk( UNIT_FUNC_PROTOTYPE )

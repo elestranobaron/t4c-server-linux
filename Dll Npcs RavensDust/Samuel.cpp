@@ -21,9 +21,9 @@ void Samuel::Create( )
 {
 	npc = Nobleman;
 	SET_NPC_NAME( "[2980]Samuel" );
-	npc.InitialPos.X = 2819;//1402; 
-	npc.InitialPos.Y = 493;//2323; 
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1402;//1402; 
+	npc.InitialPos.Y = 2323;//2323; 
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void Samuel::OnTalk( UNIT_FUNC_PROTOTYPE )

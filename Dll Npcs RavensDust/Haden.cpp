@@ -21,8 +21,8 @@ void Haden::Create( )
 {
 	npc = HadenNPC;
 	SET_NPC_NAME( "[2954]Haden" );
-	npc.InitialPos.X = 0;
-	npc.InitialPos.Y = 0; 
+	npc.InitialPos.X = 87;
+	npc.InitialPos.Y = 2654; 
 	npc.InitialPos.world = 0;
 }
 /******************************************************************************/

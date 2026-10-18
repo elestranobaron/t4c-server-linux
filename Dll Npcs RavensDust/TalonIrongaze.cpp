@@ -21,9 +21,9 @@ void TalonIrongaze::Create( void )
 {
 	npc = ( Warrior );
 	SET_NPC_NAME( "[2985]Talon Irongaze" );  
-	npc.InitialPos.X = 2796;//1383; 
-	npc.InitialPos.Y = 226;//2312;
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1383;//1383; 
+	npc.InitialPos.Y = 2312;//2312;
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void TalonIrongaze::OnTalk( UNIT_FUNC_PROTOTYPE )

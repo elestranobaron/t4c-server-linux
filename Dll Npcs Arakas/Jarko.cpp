@@ -21,9 +21,9 @@ void Jarko::Create( void )
 {
 	npc = _Jarko;
 	SET_NPC_NAME( "[2897]Jarko the necromancer" );
-	npc.InitialPos.X = 0;
-	npc.InitialPos.Y = 0;
-	npc.InitialPos.world = 0;
+	npc.InitialPos.X = 1088;
+	npc.InitialPos.Y = 103;
+	npc.InitialPos.world = 1;
 }
 /******************************************************************************/
 void Jarko::OnAttack( UNIT_FUNC_PROTOTYPE )

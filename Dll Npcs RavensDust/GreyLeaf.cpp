@@ -21,8 +21,8 @@ void GreyLeaf::Create( void )
 {
 	npc = ( GreyLeafNPC );
 	SET_NPC_NAME( "[2952]GreyLeaf the daemon tree" );
-	npc.InitialPos.X = 0;   // Need a location
-	npc.InitialPos.Y = 0;   // Need a location
+	npc.InitialPos.X = 849;   // Need a location
+	npc.InitialPos.Y = 2086;   // Need a location
 	npc.InitialPos.world = 0;
 }
 /******************************************************************************/

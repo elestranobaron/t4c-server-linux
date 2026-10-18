@@ -21,8 +21,8 @@ void JurnistakrKira::Create( void )
 {
 	npc = Priest;
 	SET_NPC_NAME( "[3009]Jurnistakr Kira" );
-	npc.InitialPos.X = 0;//1698;
-	npc.InitialPos.Y = 0;//1152;
+	npc.InitialPos.X = 1698;//1698;
+	npc.InitialPos.Y = 1152;//1152;
 	npc.InitialPos.world = 0;
 }
 /******************************************************************************/

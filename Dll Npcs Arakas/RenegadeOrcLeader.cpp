@@ -21,9 +21,9 @@ void RenegadeOrcLeader::Create( void )
 {
 	npc = _RenegadeOrcLeader;
 	SET_NPC_NAME( "[2906]Renegade Orc Leader" );
-	npc.InitialPos.X = 0; 
-	npc.InitialPos.Y = 0; 
-	npc.InitialPos.world = 0;
+	npc.InitialPos.X = 1076; 
+	npc.InitialPos.Y = 276; 
+	npc.InitialPos.world = 1;
 }
 /******************************************************************************/
 void RenegadeOrcLeader::OnDeath(UNIT_FUNC_PROTOTYPE)

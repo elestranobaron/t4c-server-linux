@@ -21,9 +21,9 @@ void Shadeen::Create()
 {
 	npc = ShadeenNPC;
 	SET_NPC_NAME( "[2981]Shadeen the Dagger" );
-	npc.InitialPos.X = 0; //Anywhere in Bloodbane's dungeon.
-	npc.InitialPos.Y = 0; //She's pretending to be held prisoner
-	npc.InitialPos.world = 0; //there, although that's not true...
+	npc.InitialPos.X = 1438; //Anywhere in Bloodbane's dungeon.
+	npc.InitialPos.Y = 2730; //She's pretending to be held prisoner
+	npc.InitialPos.world = 2; //there, although that's not true...
 }
 /******************************************************************************/
 //  __QUEST_SEEK_SHADEEN

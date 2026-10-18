@@ -21,8 +21,8 @@ void BaneBlackblood::Create( void )
 {
 	npc = ( BlackBloodNPC );
 	SET_NPC_NAME( "[2917]Bane Blackblood");  
-	npc.InitialPos.X = 0; 
-	npc.InitialPos.Y = 0;
+	npc.InitialPos.X = 342; 
+	npc.InitialPos.Y = 1679;
 	npc.InitialPos.world = 0;
 }
 /******************************************************************************/

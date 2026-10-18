@@ -21,8 +21,8 @@ void IagoCaballero::Create( void )
 {
 	npc = IagoCaballeroNPC;
 	SET_NPC_NAME( "[2955]Iago Caballero" );
-	npc.InitialPos.X = 0;
-	npc.InitialPos.Y = 0;
+	npc.InitialPos.X = 812;
+	npc.InitialPos.Y = 2714;
 	npc.InitialPos.world = 0;
 	GiveGlobalFlag(__QUEST_GLOBAL_CABALLERO_ALIVE, 0);
 }

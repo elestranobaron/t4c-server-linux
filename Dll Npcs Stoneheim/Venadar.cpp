@@ -12,9 +12,9 @@ extern NPCstructure::NPC VenadarNPC;
 void Venadar::Create( ){
 	npc = VenadarNPC;
 	SET_NPC_NAME( "[10935]A frightening beast");
-	npc.InitialPos.X = 0;		// 2345
-	npc.InitialPos.Y = 0;		// 545
-	npc.InitialPos.world = 0;	// 2
+	npc.InitialPos.X = 2345;		// 2345
+	npc.InitialPos.Y = 545;		// 545
+	npc.InitialPos.world = 2;	// 2
 }
 
 void Venadar::OnDeath( UNIT_FUNC_PROTOTYPE )

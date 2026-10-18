@@ -19,8 +19,8 @@ extern NPCstructure::NPC EdgarNPC;
 void Edgar::Create(){
 	npc = EdgarNPC;
 	SET_NPC_NAME( "[3034]Edgar Gimplestratten" );
-	npc.InitialPos.X = 0; //2855
-	npc.InitialPos.Y = 0; //1165
+	npc.InitialPos.X = 2855; //2855
+	npc.InitialPos.Y = 1165; //1165
 	npc.InitialPos.world = 0;
 }
 

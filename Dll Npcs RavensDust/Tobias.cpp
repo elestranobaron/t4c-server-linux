@@ -21,9 +21,9 @@ void Tobias::Create( )
 {
 	npc = Scribe;
 	SET_NPC_NAME( "[2990]Tobias" );
-	npc.InitialPos.X = 2863;//1343; // NEED A POSITION FOR THIS NPC!!!!!
-	npc.InitialPos.Y = 198;//2374; // NEED A POSITION FOR THIS NPC!!!!!
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1343;//1343; // NEED A POSITION FOR THIS NPC!!!!!
+	npc.InitialPos.Y = 2374;//2374; // NEED A POSITION FOR THIS NPC!!!!!
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void Tobias::OnTalk( UNIT_FUNC_PROTOTYPE )

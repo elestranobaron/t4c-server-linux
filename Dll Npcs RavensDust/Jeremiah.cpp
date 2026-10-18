@@ -21,9 +21,9 @@ void Jeremiah::Create( )
 {
 	npc = JeremiahNPC;
 	SET_NPC_NAME( "[2958]Jeremiah" );
-	npc.InitialPos.X = 2859;//1344;
-	npc.InitialPos.Y = 218;//2377;
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1344;//1344;
+	npc.InitialPos.Y = 2377;//2377;
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void Jeremiah::OnTalk( UNIT_FUNC_PROTOTYPE )

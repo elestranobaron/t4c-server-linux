@@ -21,8 +21,8 @@ void GhundargRumblefoot::Create()
 {
 	npc = GhundargRumblefootNPC;
 	SET_NPC_NAME( "[2950]Ghundarg Rumblefoot" );
-	npc.InitialPos.X = 0; 
-	npc.InitialPos.Y = 0; 
+	npc.InitialPos.X = 1135; 
+	npc.InitialPos.Y = 1798; 
 	npc.InitialPos.world = 0;
 }
 /******************************************************************************/

@@ -21,9 +21,9 @@ void Kiadus::Create( )
 {
 	npc = ShopKeeper;
 	SET_NPC_NAME( "[2962]Kiadus" );
-	npc.InitialPos.X = 2895;//1467; 
-	npc.InitialPos.Y = 269;//2395; 
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1467;//1467; 
+	npc.InitialPos.Y = 2395;//2395; 
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void Kiadus::OnTalk( UNIT_FUNC_PROTOTYPE )

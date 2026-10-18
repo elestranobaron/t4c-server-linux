@@ -22,8 +22,8 @@ void ColosseumOwner::Create( void )
 	npc = ( ColosseumClerkNPC );
 	SET_NPC_NAME( "[10970]A wealthy-looking man" );  
    #ifdef BUILD_NMS_CUSTOM_NPC
-	   npc.InitialPos.X     = 0;//345; 
-	   npc.InitialPos.Y     = 0;//490;
+	   npc.InitialPos.X     = 345;//345; 
+	   npc.InitialPos.Y     = 490;//490;
 	   npc.InitialPos.world = 0;
    #else
       npc.InitialPos.X = 345; 

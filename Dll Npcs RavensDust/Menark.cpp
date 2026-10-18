@@ -22,9 +22,9 @@ void Menark::Create( )
 {
 	npc = Mage;
 	SET_NPC_NAME( "[2966]Menark" );
-	npc.InitialPos.X = 2862;//1342; 
-	npc.InitialPos.Y = 125;//2383;
-	npc.InitialPos.world = 4;//0;
+	npc.InitialPos.X = 1342;//1342; 
+	npc.InitialPos.Y = 2383;//2383;
+	npc.InitialPos.world = 0;//0;
 }
 /******************************************************************************/
 void Menark::OnTalk( UNIT_FUNC_PROTOTYPE )
