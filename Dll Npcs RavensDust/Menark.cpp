@@ -193,7 +193,7 @@ void Menark::OnTalk( UNIT_FUNC_PROTOTYPE )
 						ENDIF 
 						ENDCASE
 					OTHERWISE	
-						PRIVATE_SYSTEM_MESSAGE(INTL( 10137, "[ERROR MENARK1.0] This text should not appear. If you see it, please report it to Dialsoft."))
+						PRIVATE_SYSTEM_MESSAGE(INTL( 10137, "[ERROR MENARK1.0] This text should not appear. If you see it, please report it to Vircom."))
 						ENDCASE
 				ENDSWITCH	
 			ELSE
